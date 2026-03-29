@@ -196,6 +196,7 @@
   <div class="tab"         onclick="showTab('inkoop')">INKOOP</div>
   <div class="tab"         onclick="showTab('afgerond')">AFGEROND</div>
   <div class="tab"         onclick="showTab('financieel')">FINANCIEEL</div>
+  <div class="tab"         onclick="showTab('overzicht')">OVERZICHT</div>
   <div class="tab"         onclick="showTab('producten')">PRODUCTEN</div>
 </div>
 
@@ -210,7 +211,7 @@
     <div class="dash-tile">
       <div class="dl">Omzet</div>
       <div class="dv accent" id="dash-omzet">€0</div>
-      <div class="ds">Gesloten orders</div>
+      <div class="ds">Betaalde orders</div>
     </div>
     <div class="dash-tile">
       <div class="dl">Inkoopkosten</div>
@@ -286,12 +287,12 @@
       <div class="wa green" id="fin-winst">€0,00</div>
     </div>
     <div class="divider"></div>
-    <div class="stat-row"><span class="stat-label">Omzet gesloten orders</span><span class="stat-value" id="fin-omzet">€0</span></div>
-    <div class="stat-row"><span class="stat-label">Inkoopkosten (betaald)</span><span class="stat-value red" id="fin-inkoop">€0</span></div>
-    <div class="stat-row"><span class="stat-label">Verzendkosten (voor klant)</span><span class="stat-value blue" id="fin-vrzd">€0</span></div>
+    <div class="stat-row"><span class="stat-label">Omzet ontvangen</span><span class="stat-value" id="fin-omzet">€0</span></div>
+    <div class="stat-row"><span class="stat-label">Inkoopkosten betaald</span><span class="stat-value red" id="fin-inkoop">€0</span></div>
+    <div class="stat-row"><span class="stat-label">Verzendkosten</span><span class="stat-value blue" id="fin-vrzd">Klant betaalt</span></div>
     <div class="divider"></div>
     <div class="stat-row"><span class="stat-label">Verwachte omzet (open)</span><span class="stat-value blue" id="fin-open-omzet">€0</span></div>
-    <div class="stat-row"><span class="stat-label">Inkoop onbetaald</span><span class="stat-value orange" id="fin-inkoop-open">€0</span></div>
+    <div class="stat-row"><span class="stat-label">Verwachte inkoopkosten</span><span class="stat-value orange" id="fin-inkoop-open">€0</span></div>
   </div>
   <div class="card">
     <div class="card-title">PER PRODUCT</div>
@@ -304,6 +305,11 @@
       <input class="form-input" type="number" step="0.01" id="set-vrzd" value="6.95" onchange="saveSettings()">
     </div>
   </div>
+</div>
+
+<!-- OVERZICHT -->
+<div class="content" id="tab-overzicht">
+  <div id="overzicht-content"></div>
 </div>
 
 <!-- PRODUCTEN -->
@@ -486,7 +492,7 @@ const STATUS_TAG={
 // ════════════════════════════════
 // TABS
 // ════════════════════════════════
-const TAB_NAMES=['dashboard','voorraad','verkoop','inkoop','afgerond','financieel','producten'];
+const TAB_NAMES=['dashboard','voorraad','verkoop','inkoop','afgerond','financieel','overzicht','producten'];
 function showTab(name){
   document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -494,6 +500,7 @@ function showTab(name){
   document.querySelectorAll('.tab')[TAB_NAMES.indexOf(name)]?.classList.add('active');
   ({dashboard:renderDashboard,voorraad:renderVoorraad,verkoop:renderVerkoop,
     inkoop:renderInkoop,afgerond:renderAfgerond,financieel:renderFinancieel,
+    overzicht:renderOverzicht,
     producten:renderProducten})[name]?.();
 }
 
@@ -527,7 +534,8 @@ function renderDashboard(){
   const vrzd=S.settings.verzend||6.95;
   let omzet=0,betaaldeInkoop=0,verzendK=0,openOrders=0,totStock=0;
 
-  S.verkoopOrders.filter(o=>o.gesloten).forEach(o=>{
+  // Omzet = alle betaalde verkooporders
+  S.verkoopOrders.filter(o=>o.betaling==='betaald').forEach(o=>{
     const pr=o.prijs||getProd(o.prodId)?.verkoop||20;
     omzet+=(o.aantal||1)*pr;
   });
@@ -627,7 +635,7 @@ function renderDashOpenOrders(){
 function dashToggleBetaling(id){
   const o=S.verkoopOrders.find(x=>x.id===id);if(!o)return;
   o.betaling=o.betaling==='betaald'?'onbetaald':'betaald';
-  save();renderDashboard();
+  save();renderDashboard();renderFinancieel();
   showToast(o.betaling==='betaald'?'BETALING ONTVANGEN':'BETALING OPENSTAAND');
 }
 
@@ -637,6 +645,88 @@ function sluitVanDashboard(id){
   o.gesloten=true;o.sluitDatum=today();
   save();renderDashboard();renderVerkoop();renderVoorraad();
   showToast('ORDER GESLOTEN');
+}
+
+// ════════════════════════════════
+// RENDER OVERZICHT
+// ════════════════════════════════
+function renderOverzicht(){
+  const el=document.getElementById('overzicht-content');
+  if(!el)return;
+  let html='';
+
+  S.producten.forEach(function(prod){
+    const variants=(prod.varianten&&prod.varianten.length)?prod.varianten:[{id:null,naam:'Standaard',kleur:'#555'}];
+    const allOrders=S.verkoopOrders.filter(function(o){return o.prodId===prod.id;});
+    const betaald=allOrders.filter(function(o){return o.betaling==='betaald';});
+    const openO=allOrders.filter(function(o){return !o.gesloten&&o.betaling!=='betaald';});
+
+    const totVerkocht=betaald.reduce(function(s,o){return s+(o.aantal||1);},0);
+    const totOmzet=betaald.reduce(function(s,o){return s+(o.aantal||1)*(o.prijs||prod.verkoop);},0);
+    const totInkoop=betaald.reduce(function(s,o){return s+(o.aantal||1)*prod.inkoop;},0);
+    const totWinst=totOmzet-totInkoop;
+    const totOpen=openO.reduce(function(s,o){return s+(o.aantal||1);},0);
+
+    html+='<div class="card">';
+    html+='<div class="card-title">'+(prod.icon||'')+ ' '+prod.naam+'</div>';
+    html+='<div class="stat-row"><span class="stat-label">Verkocht (betaald)</span><span class="stat-value accent">'+totVerkocht+' stuks</span></div>';
+    html+='<div class="stat-row"><span class="stat-label">Omzet ontvangen</span><span class="stat-value green">'+fmt(totOmzet)+'</span></div>';
+    html+='<div class="stat-row"><span class="stat-label">Inkoopkosten</span><span class="stat-value red">-'+fmt(totInkoop)+'</span></div>';
+    html+='<div class="stat-row"><span class="stat-label">Winst</span><span class="stat-value '+(totWinst>=0?'green':'red')+'">'+fmt(totWinst)+'</span></div>';
+    if(totOpen>0){html+='<div class="stat-row"><span class="stat-label">Open / onbetaald</span><span class="stat-value orange">'+totOpen+' stuks</span></div>';}
+
+    // Per variant
+    html+='<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.07);padding-top:10px">';
+    html+='<div style="font-size:10px;letter-spacing:3px;color:rgba(245,240,232,0.3);margin-bottom:8px">PER VARIANT</div>';
+    variants.forEach(function(v){
+      const vBetaald=betaald.filter(function(o){return o.variantId===v.id;});
+      const vOpen=openO.filter(function(o){return o.variantId===v.id;});
+      const vVerkocht=vBetaald.reduce(function(s,o){return s+(o.aantal||1);},0);
+      const vOmzet=vBetaald.reduce(function(s,o){return s+(o.aantal||1)*(o.prijs||prod.verkoop);},0);
+      const vWinst=vOmzet-vBetaald.reduce(function(s,o){return s+(o.aantal||1)*prod.inkoop;},0);
+      const vOpenAantal=vOpen.reduce(function(s,o){return s+(o.aantal||1);},0);
+      const vStock=getStock(prod.id,v.id);
+      const kleurDot=v.kleur?'<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:'+v.kleur+';margin-right:6px;vertical-align:middle"></span>':'';
+
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">';
+      html+='<div>'+kleurDot+'<span style="font-family:var(--fd);font-size:15px">'+v.naam+'</span>';
+      html+='<div style="font-size:10px;color:rgba(245,240,232,0.38);margin-top:2px">'+vVerkocht+' verkocht &nbsp;&middot;&nbsp; '+vStock+' in stock'+(vOpenAantal>0?' &nbsp;&middot;&nbsp; <span style="color:var(--orange)">'+vOpenAantal+' open</span>':'')+'</div></div>';
+      html+='<div style="text-align:right">';
+      html+='<div style="font-family:var(--fd);font-size:18px;color:'+(vWinst>=0?'var(--green)':'var(--red)')+'">'+fmt(vWinst)+'</div>';
+      html+='<div style="font-size:10px;color:rgba(245,240,232,0.38)">'+fmt(vOmzet)+' omzet</div>';
+      html+='</div></div>';
+    });
+    html+='</div>';
+
+    // Orders list
+    if(allOrders.length){
+      html+='<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.07);padding-top:10px">';
+      html+='<div style="font-size:10px;letter-spacing:3px;color:rgba(245,240,232,0.3);margin-bottom:8px">ORDERS ('+allOrders.length+')</div>';
+      allOrders.slice().reverse().forEach(function(o){
+        var v2=getVar(prod,o.variantId);
+        var betalingOk=o.betaling==='betaald';
+        var statusLbl=STATUS_LBL[o.status]||o.status;
+        var statusCls=STATUS_TAG[o.status]||'';
+        html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04)">';
+        html+='<div>';
+        html+='<div style="font-family:var(--fd);font-size:14px">'+o.naam+'</div>';
+        html+='<div style="font-size:10px;color:rgba(245,240,232,0.38)">'+(v2?v2.naam+' &middot; ':'')+o.datum+' &middot; '+(o.aantal||1)+'x &middot; '+fmt((o.aantal||1)*(o.prijs||prod.verkoop))+'</div>';
+        html+='</div>';
+        html+='<div style="display:flex;gap:4px;flex-shrink:0">';
+        html+='<span class="tag '+statusCls+'" style="font-size:10px">'+statusLbl+'</span>';
+        html+='<span class="tag '+(betalingOk?'tag-green':'tag-orange')+'" style="font-size:10px">'+(betalingOk?'&#128176;':'&#9203;')+'</span>';
+        html+='<span class="tag '+(o.gesloten?'tag-green':'tag-orange')+'" style="font-size:10px">'+(o.gesloten?'&#9989;':'&#128336;')+'</span>';
+        html+='</div></div>';
+      });
+      html+='</div>';
+    } else {
+      html+='<div class="empty" style="padding:12px">Nog geen orders voor dit product</div>';
+    }
+
+    html+='</div>';
+  });
+
+  el.innerHTML=html||'<div class="empty">Geen producten gevonden</div>';
 }
 
 let _charts={};
@@ -834,7 +924,7 @@ function sluitOrder(id){
 function toggleBetaling(id){
   const o=S.verkoopOrders.find(x=>x.id===id);if(!o)return;
   o.betaling=o.betaling==='betaald'?'onbetaald':'betaald';
-  save();renderVerkoop();renderAfgerond();renderDashboard();
+  save();renderVerkoop();renderAfgerond();renderDashboard();renderFinancieel();
   showToast(o.betaling==='betaald'?'BETALING ONTVANGEN':'BETALING OPENSTAAND');
 }
 
@@ -920,7 +1010,7 @@ function ontvangInkoop(id){
 
 function betaalInkoop(id){
   const o=S.inkoopOrders.find(x=>x.id===id);
-  if(o){o.betaling='betaald';save();renderInkoop();renderDashboard();showToast('BETALING GEMARKEERD');}
+  if(o){o.betaling='betaald';save();renderInkoop();renderDashboard();renderFinancieel();showToast('BETALING GEMARKEERD');}
 }
 
 function delInkoop(id){
@@ -935,38 +1025,44 @@ function delInkoop(id){
 // ════════════════════════════════
 function renderFinancieel(){
   const vrzd=S.settings.verzend||6.95;
-  let omzet=0,betaaldeInkoop=0,verzendK=0,openOmzet=0,openInkoop=0;
 
-  S.verkoopOrders.filter(o=>o.gesloten).forEach(o=>{
-    const pr=o.prijs||getProd(o.prodId)?.verkoop||20;
-    omzet+=(o.aantal||1)*pr;
+  // OMZET = alle betaalde verkooporders (direct verwerkt zodra betaald=true)
+  let omzet=0;
+  S.verkoopOrders.filter(o=>o.betaling==='betaald').forEach(o=>{
+    omzet+=(o.aantal||1)*(o.prijs||getProd(o.prodId)?.verkoop||20);
   });
+
+  // INKOOPKOSTEN = alle betaalde inkooporders
+  let betaaldeInkoop=0;
   S.inkoopOrders.filter(o=>o.betaling==='betaald').forEach(o=>{
     betaaldeInkoop+=(o.items||[]).reduce((s,i)=>s+i.aantal*(i.inkoop||10.20),0);
   });
-  S.verkoopOrders.filter(o=>!o.gesloten).forEach(o=>{
+
+  // WINST = omzet - inkoopkosten
+  const winst=omzet-betaaldeInkoop;
+
+  // VERWACHTE OMZET = open orders die nog niet betaald zijn
+  let openOmzet=0;
+  S.verkoopOrders.filter(o=>!o.gesloten&&o.betaling!=='betaald').forEach(o=>{
     openOmzet+=(o.aantal||1)*(o.prijs||getProd(o.prodId)?.verkoop||20);
   });
+
+  // VERWACHTE KOSTEN = onbetaalde inkooporders
+  let openInkoop=0;
   S.inkoopOrders.filter(o=>o.betaling!=='betaald').forEach(o=>{
     openInkoop+=(o.items||[]).reduce((s,i)=>s+i.aantal*(i.inkoop||10.20),0);
   });
 
-  const winst=omzet-betaaldeInkoop;
   document.getElementById('fin-winst').textContent=fmt(winst);
   document.getElementById('fin-winst').className='wa '+(winst>=0?'green':'red');
   document.getElementById('fin-omzet').textContent=fmt(omzet);
-  // Bereken totale verzendkosten (info, niet aftrekken)
-  let totVerzend=0;
-  S.verkoopOrders.filter(o=>o.gesloten).forEach(o=>{
-    if(o.levering==='verzenden'||o.status==='verzonden')totVerzend+=vrzd;
-  });
   document.getElementById('fin-inkoop').textContent='−'+fmt(betaaldeInkoop);
-  document.getElementById('fin-vrzd').textContent=fmt(totVerzend)+' (klant betaalt)';
+  document.getElementById('fin-vrzd').textContent='Klant betaalt verzendkosten';
   document.getElementById('fin-open-omzet').textContent=fmt(openOmzet);
   document.getElementById('fin-inkoop-open').textContent=fmt(openInkoop);
 
   document.getElementById('fin-per-product').innerHTML=S.producten.map(prod=>{
-    const orders=S.verkoopOrders.filter(o=>o.prodId===prod.id&&o.gesloten);
+    const orders=S.verkoopOrders.filter(o=>o.prodId===prod.id&&o.betaling==='betaald');
     const totN=orders.reduce((s,o)=>s+(o.aantal||1),0);
     const totW=orders.reduce((s,o)=>{
       return s+((o.aantal||1)*(o.prijs||prod.verkoop))-((o.aantal||1)*prod.inkoop);
@@ -1152,7 +1248,7 @@ function saveVerkoop(){
 
   if(levering!=='reserveren'){
     const avail=Math.max(0,getStock(prodId,_vkVar||'')-getReserved(prodId,_vkVar||''));
-    if(avail<aantal&&!confirm(`Voorraad te laag (${avail} beschikbaar). Toch opslaan?`))return;
+    if(avail<aantal){showToast('LET OP: VOORRAAD TE LAAG ('+avail+' beschikbaar)');}
   }
 
   // Boek voorraad direct af (behalve bij reserveren)
