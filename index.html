@@ -597,7 +597,7 @@ function renderDashOpenOrders(){
     var prod=getProd(o.prodId);
     var v=getVar(prod,o.variantId);
     var betalingOk=o.betaling==='betaald';
-    var geleverd=['verzonden','afgeleverd','langsbrengen','festival'].indexOf(o.status)>-1;
+    var geleverd=o.gesloten||['verzonden','afgeleverd'].indexOf(o.status)>-1;
     var kleur=v?v.kleur||'#555':'#555';
     var statusLbl=STATUS_LBL[o.status]||o.status;
     var statusCls=STATUS_TAG[o.status]||'';
@@ -717,7 +717,7 @@ function renderVoorraad(){
   const grid=document.getElementById('voorraad-grid');
   grid.innerHTML='';
   let totaal=0,res=0,vrij=0;
-  const sold=S.verkoopOrders.filter(o=>o.gesloten&&o.voorraadAfgeboekt).reduce((s,o)=>s+(o.aantal||1),0);
+  const sold=S.verkoopOrders.filter(o=>o.gesloten).reduce((s,o)=>s+(o.aantal||1),0);
 
   S.producten.forEach(prod=>{
     (prod.varianten||[]).forEach(v=>{
@@ -816,7 +816,8 @@ function orderCard(o,closed){
 function updateVkStatus(id,status){
   const o=S.verkoopOrders.find(x=>x.id===id);if(!o)return;
   o.status=status;
-  if(['verzonden','afgeleverd'].includes(status)&&!o.voorraadAfgeboekt){
+  // Voorraad al afgeboekt bij aanmaken order (tenzij reserveren -> dan nu afboeken)
+  if(!o.voorraadAfgeboekt && status !== 'reserveren'){
     addStock(o.prodId,o.variantId,-(o.aantal||1));o.voorraadAfgeboekt=true;
   }
   save();renderVerkoop();renderVoorraad();renderDashboard();showToast('STATUS BIJGEWERKT');
@@ -824,6 +825,7 @@ function updateVkStatus(id,status){
 
 function sluitOrder(id){
   const o=S.verkoopOrders.find(x=>x.id===id);if(!o)return;
+  // Voorraad alleen afboeken als dat nog niet gedaan is (reserveren wordt pas hier afgeboekt)
   if(!o.voorraadAfgeboekt){addStock(o.prodId,o.variantId,-(o.aantal||1));o.voorraadAfgeboekt=true;}
   o.gesloten=true;o.sluitDatum=today();
   save();renderVerkoop();renderVoorraad();renderAfgerond();renderDashboard();showToast('ORDER GESLOTEN');
@@ -838,9 +840,9 @@ function toggleBetaling(id){
 
 function heropenOrder(id){
   const o=S.verkoopOrders.find(x=>x.id===id);if(!o)return;
-  // Herstel voorraad als die was afgeboekt
+  // Herstel voorraad
   if(o.voorraadAfgeboekt){addStock(o.prodId,o.variantId,o.aantal||1);o.voorraadAfgeboekt=false;}
-  o.gesloten=false;o.sluitDatum=null;
+  o.gesloten=false;o.sluitDatum=null;o.status='nieuw';
   save();renderAfgerond();renderVerkoop();renderVoorraad();renderDashboard();
   showToast('ORDER HEROPEND');
 }
@@ -1153,11 +1155,16 @@ function saveVerkoop(){
     if(avail<aantal&&!confirm(`Voorraad te laag (${avail} beschikbaar). Toch opslaan?`))return;
   }
 
+  // Boek voorraad direct af (behalve bij reserveren)
+  const directAfboeken = levering !== 'reserveren';
+  if(directAfboeken){
+    addStock(prodId, _vkVar||null, -aantal);
+  }
   S.verkoopOrders.push({
     id:uid(),naam,prodId,variantId:_vkVar||null,
     aantal,prijs,levering,betaling,status:'nieuw',
     datum:today(),notitie:document.getElementById('vk-notitie').value.trim(),
-    gesloten:false,voorraadAfgeboekt:false
+    gesloten:false,voorraadAfgeboekt:directAfboeken
   });
   save();closeModal('modal-verkoop');renderVerkoop();renderVoorraad();renderDashboard();
   showToast('ORDER OPGESLAGEN');
