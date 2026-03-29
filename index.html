@@ -304,6 +304,11 @@
       <label class="form-label">Verzendkosten per order (€)</label>
       <input class="form-input" type="number" step="0.01" id="set-vrzd" value="6.95" onchange="saveSettings()">
     </div>
+    <div class="divider"></div>
+    <div class="form-group">
+      <label class="form-label">Gevaarlijke zone</label>
+      <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;letter-spacing:2px" onclick="resetAlles()">🗑 ALLES WISSEN & OPNIEUW BEGINNEN</button>
+    </div>
   </div>
 </div>
 
@@ -1363,6 +1368,33 @@ function handleImport(input){
     input.value='';
   };
   reader.readAsText(file);
+}
+
+// ════════════════════════════════
+// RESET
+// ════════════════════════════════
+function resetAlles(){
+  const bevestig1 = prompt('Type WISSEN om alles te verwijderen:');
+  if(bevestig1 !== 'WISSEN'){showToast('GEANNULEERD');return;}
+  localStorage.removeItem('ksv3');
+  S={
+    producten:[{
+      id:'caps',naam:'Snapback Cap',icon:'🧢',inkoop:10.20,verkoop:20.00,
+      varianten:[
+        {id:'black', naam:'Black', kleur:'#2a2a2a'},
+        {id:'purple',naam:'Purple',kleur:'#6b21c8'},
+        {id:'navy',  naam:'Navy',  kleur:'#1e3a5f'},
+        {id:'pink',  naam:'Pink',  kleur:'#e8a0b0'},
+      ]
+    }],
+    voorraad:{},
+    inkoopOrders:[],
+    verkoopOrders:[],
+    settings:{verzend:6.95}
+  };
+  save();
+  renderDashboard();
+  showToast('SYSTEEM GEWIST');
 }
 
 // ════════════════════════════════
