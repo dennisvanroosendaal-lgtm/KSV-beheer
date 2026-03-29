@@ -101,6 +101,8 @@
   .btn-sec:active{border-color:var(--white);color:var(--white);}
   .btn-danger{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);
     color:var(--red);font-family:var(--fd);font-size:12px;padding:8px 10px;cursor:pointer;border-radius:2px;}
+  .btn-green{color:var(--green)!important;border-color:var(--green)!important;}
+  .btn-orange{color:var(--orange)!important;border-color:var(--orange)!important;}
 
   /* ORDER CARDS */
   .order-card{background:var(--card);border:1px solid var(--border);border-radius:4px;
@@ -575,40 +577,58 @@ function renderDashboard(){
   }));
 
   // Open orders in dashboard
-  const openOrdersEl=document.getElementById('dash-open-orders');
-  const openOrders=S.verkoopOrders.filter(o=>!o.gesloten).slice().reverse();
-  if(!openOrders.length){
-    openOrdersEl.innerHTML='<div class="empty" style="padding:12px">Geen open orders 🎉</div>';
-  } else {
-    openOrdersEl.innerHTML=openOrders.map(o=>{
-      const prod=getProd(o.prodId);const v=getVar(prod,o.variantId);
-      const betalingOk=o.betaling==='betaald';
-      const geleverd=['verzonden','afgeleverd','langsbrengen','festival'].includes(o.status);
-      return `<div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <div style="flex:1;min-width:0">
-          <div style="font-family:var(--fd);font-size:16px;letter-spacing:1px">${o.naam}</div>
-          <div style="font-size:10px;color:var(--muted);margin-top:2px">
-            ${v?`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${v.kleur||'#555'};margin-right:4px;vertical-align:middle"></span>${v.naam}`:''}
-            · ${o.aantal||1}x · ${o.datum}
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">
-          <span class="tag ${STATUS_TAG[o.status]||''}" style="font-size:10px">${STATUS_LBL[o.status]||o.status}</span>
-          <div style="display:flex;gap:4px">
-            <span class="tag ${betalingOk?'tag-green':'tag-orange'}" style="font-size:10px">${betalingOk?'💰':'⏳'}</span>
-            <span class="tag ${geleverd?'tag-green':'tag-orange'}" style="font-size:10px">${geleverd?'📦✓':'📦?'}</span>
-          </div>
-          <div style="display:flex;gap:4px;margin-top:2px">
-            <button class="btn-sec" onclick="toggleBetaling('${o.id}');renderDashboard()" style="font-size:10px;padding:4px 8px;${betalingOk?'color:var(--green);border-color:var(--green)':'color:var(--orange);border-color:var(--orange)'}">${betalingOk?'BETAALD':'BETALEN'}</button>
-            <button class="btn-sec" onclick="sluitVanDashboard('${o.id}')" style="font-size:10px;padding:4px 8px;color:var(--green);border-color:var(--green)">SLUITEN</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-  }
+  renderDashOpenOrders();
 
-  // Charts
+    // Charts
   renderCharts();
+}
+
+function renderDashOpenOrders(){
+  const el=document.getElementById('dash-open-orders');
+  if(!el)return;
+  const orders=S.verkoopOrders.filter(function(o){return !o.gesloten;}).slice().reverse();
+  if(!orders.length){
+    el.innerHTML='<div class="empty" style="padding:12px">Geen open orders</div>';
+    return;
+  }
+  var html='';
+  for(var i=0;i<orders.length;i++){
+    var o=orders[i];
+    var prod=getProd(o.prodId);
+    var v=getVar(prod,o.variantId);
+    var betalingOk=o.betaling==='betaald';
+    var geleverd=['verzonden','afgeleverd','langsbrengen','festival'].indexOf(o.status)>-1;
+    var kleur=v?v.kleur||'#555':'#555';
+    var statusLbl=STATUS_LBL[o.status]||o.status;
+    var statusCls=STATUS_TAG[o.status]||'';
+    html+='<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.07)">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">';
+    html+='<div style="flex:1;min-width:0">';
+    html+='<div style="font-family:var(--fd);font-size:16px">'+o.naam+'</div>';
+    if(v){
+      html+='<div style="font-size:10px;color:rgba(245,240,232,0.38);margin-top:2px">';
+      html+='<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+kleur+'"></span> ';
+      html+=v.naam+' &middot; '+(o.aantal||1)+'x &middot; '+o.datum;
+      html+='</div>';
+    }
+    html+='<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">';
+    html+='<span class="tag '+statusCls+'">'+statusLbl+'</span>';
+    html+='<span class="tag '+(betalingOk?'tag-green':'tag-orange')+'">'+(betalingOk?'&#128176; BETAALD':'&#9203; OPEN')+'</span>';
+    html+='<span class="tag '+(geleverd?'tag-green':'tag-orange')+'">'+(geleverd?'&#9989; GELEVERD':'&#128336; TE LEVEREN')+'</span>';
+    html+='</div></div>';
+    html+='<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">';
+    html+='<button class="btn-sec '+(betalingOk?'btn-green':'btn-orange')+'" onclick="dashToggleBetaling('+JSON.stringify(o.id)+')" style="font-size:10px;padding:5px 10px">'+(betalingOk?'BETAALD':'BETALEN')+'</button>';
+    html+='<button class="btn-sec btn-green" onclick="sluitVanDashboard('+JSON.stringify(o.id)+')" style="font-size:10px;padding:5px 10px">SLUITEN</button>';
+    html+='</div></div></div>';
+  }
+  el.innerHTML=html;
+}
+
+function dashToggleBetaling(id){
+  const o=S.verkoopOrders.find(x=>x.id===id);if(!o)return;
+  o.betaling=o.betaling==='betaald'?'onbetaald':'betaald';
+  save();renderDashboard();
+  showToast(o.betaling==='betaald'?'BETALING ONTVANGEN':'BETALING OPENSTAAND');
 }
 
 function sluitVanDashboard(id){
@@ -771,7 +791,7 @@ function orderCard(o,closed){
     </div>
     ${!closed?`
     <div class="order-actions">
-      <button class="btn-sec" onclick="toggleBetaling('${o.id}')" style="white-space:nowrap;${o.betaling==='betaald'?'color:var(--green);border-color:var(--green)':'color:var(--orange);border-color:var(--orange)'}">${o.betaling==='betaald'?'💰 BETAALD':'⏳ BETALEN'}</button>
+      <button class="btn-sec ${o.betaling==='betaald'?'btn-green':'btn-orange'}" onclick="toggleBetaling('${o.id}')" style="white-space:nowrap">${o.betaling==='betaald'?'💰 BETAALD':'⏳ BETALEN'}</button>
       <select class="order-status-sel" onchange="updateVkStatus('${o.id}',this.value)">
         <option value="nieuw"        ${o.status==='nieuw'?'selected':''}>🆕 Nieuw</option>
         <option value="ingepakt"     ${o.status==='ingepakt'?'selected':''}>📦 Ingepakt</option>
