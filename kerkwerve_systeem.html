@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>KSV – Beheer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap');
+  :root {
+    --black:#0a0a0a; --dark:#111; --card:#161616; --border:rgba(255,255,255,0.07);
+    --white:#f5f0e8; --muted:rgba(245,240,232,0.38); --accent:#ffdd00;
+    --green:#4ade80; --red:#f87171; --blue:#60a5fa; --orange:#fb923c;
+    --fd:'Bebas Neue','Impact',sans-serif; --fm:'Space Mono','Courier New',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{background:var(--black);color:var(--white);font-family:var(--fm);font-size:13px;}
+
+  .app-header{background:var(--dark);border-bottom:1px solid var(--border);padding:13px 16px;
+    display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;}
+  .app-title{font-family:var(--fd);font-size:20px;letter-spacing:3px;}
+  .app-title span{color:var(--accent);}
+  .hdr-btns{display:flex;gap:8px;}
+
+  .tabs{display:flex;background:var(--dark);border-bottom:1px solid var(--border);
+    overflow-x:auto;scrollbar-width:none;position:sticky;top:52px;z-index:99;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{font-family:var(--fd);font-size:13px;letter-spacing:2px;padding:11px 14px;
+    color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;
+    white-space:nowrap;transition:color .2s,border-color .2s;flex-shrink:0;}
+  .tab.active{color:var(--accent);border-color:var(--accent);}
+
+  .content{padding:16px;display:none;}
+  .content.active{display:block;}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:14px;margin-bottom:12px;}
+  .card-title{font-family:var(--fd);font-size:15px;letter-spacing:2px;color:var(--accent);margin-bottom:12px;}
+
+  .stat-row{display:flex;justify-content:space-between;align-items:center;
+    padding:7px 0;border-bottom:1px solid var(--border);}
+  .stat-row:last-child{border-bottom:none;}
+  .stat-label{color:var(--muted);font-size:10px;letter-spacing:2px;text-transform:uppercase;}
+  .stat-value{font-family:var(--fd);font-size:20px;letter-spacing:1px;}
+  .green{color:var(--green)!important;} .red{color:var(--red)!important;}
+  .orange{color:var(--orange)!important;} .accent{color:var(--accent)!important;}
+  .blue{color:var(--blue)!important;}
+
+  /* DASHBOARD */
+  .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .dash-tile{background:var(--card);border:1px solid var(--border);border-radius:4px;
+    padding:14px;text-align:center;}
+  .dash-tile .dl{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;}
+  .dash-tile .dv{font-family:var(--fd);font-size:36px;letter-spacing:-1px;line-height:1;}
+  .dash-tile .ds{font-size:10px;color:var(--muted);margin-top:4px;}
+  .dash-winst{grid-column:1/-1;background:var(--card);border:1px solid var(--border);
+    border-radius:4px;padding:20px;text-align:center;}
+  .dash-winst .dl{font-size:10px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
+  .dash-winst .dv{font-family:var(--fd);font-size:60px;letter-spacing:-2px;line-height:1;}
+
+  .alert-box{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);
+    border-radius:4px;padding:11px 13px;margin-bottom:10px;}
+  .alert-box .al{font-family:var(--fd);font-size:13px;letter-spacing:1px;color:var(--red);margin-bottom:4px;}
+  .alert-box .as{font-size:11px;color:var(--muted);}
+  .alert-orange{background:rgba(251,146,60,0.08);border-color:rgba(251,146,60,0.2);}
+  .alert-orange .al{color:var(--orange);}
+
+  /* VOORRAAD */
+  .vrd-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .kleur-card{background:var(--card);border:1px solid var(--border);border-radius:4px;
+    padding:14px;text-align:center;position:relative;}
+  .kleur-dot{width:32px;height:32px;border-radius:50%;margin:0 auto 8px;border:2px solid rgba(255,255,255,0.15);}
+  .kleur-name{font-family:var(--fd);font-size:16px;letter-spacing:2px;margin-bottom:6px;}
+  .stock-num{font-family:var(--fd);font-size:38px;color:var(--accent);line-height:1;}
+  .stock-num.low{color:var(--orange);} .stock-num.out{color:var(--muted);}
+  .stock-meta{font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:1px;}
+  .res-badge{position:absolute;top:6px;right:6px;background:var(--orange);
+    color:var(--black);font-family:var(--fd);font-size:10px;padding:2px 5px;border-radius:2px;}
+
+  /* FORMS */
+  .form-group{margin-bottom:12px;}
+  .form-label{display:block;font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:5px;}
+  .form-input,.form-select{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);
+    color:var(--white);font-family:var(--fm);font-size:13px;padding:11px;
+    border-radius:2px;outline:none;transition:border-color .2s;-webkit-appearance:none;}
+  .form-input:focus,.form-select:focus{border-color:var(--accent);}
+  .form-select option{background:#1a1a1a;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+  .sel-btn{padding:11px 8px;border:1.5px solid var(--border);background:transparent;
+    color:var(--white);font-family:var(--fd);font-size:13px;letter-spacing:1px;
+    cursor:pointer;border-radius:2px;text-align:center;
+    transition:border-color .2s,background .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .sel-btn.selected{border-color:var(--accent);background:rgba(255,221,0,0.06);color:var(--accent);}
+  .sel-btn .cdot{width:14px;height:14px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);flex-shrink:0;}
+
+  .btn-primary{width:100%;background:var(--accent);color:var(--black);font-family:var(--fd);
+    font-size:18px;letter-spacing:4px;padding:14px;border:none;cursor:pointer;
+    border-radius:2px;margin-top:6px;}
+  .btn-primary:active{background:#ffe833;}
+  .btn-sec{background:transparent;border:1px solid var(--border);color:var(--muted);
+    font-family:var(--fd);font-size:12px;letter-spacing:2px;padding:8px 12px;cursor:pointer;border-radius:2px;}
+  .btn-sec:active{border-color:var(--white);color:var(--white);}
+  .btn-danger{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);
+    color:var(--red);font-family:var(--fd);font-size:12px;padding:8px 10px;cursor:pointer;border-radius:2px;}
+
+  /* ORDER CARDS */
+  .order-card{background:var(--card);border:1px solid var(--border);border-radius:4px;
+    padding:13px;margin-bottom:10px;border-left:3px solid var(--border);}
+  .order-card.s-nieuw{border-left-color:var(--blue);}
+  .order-card.s-ingepakt,.order-card.s-reserveren{border-left-color:var(--orange);}
+  .order-card.s-verzonden,.order-card.s-afgeleverd,.order-card.s-langsbrengen,.order-card.s-festival{border-left-color:var(--green);}
+  .order-card.s-gesloten{border-left-color:rgba(255,255,255,0.15);opacity:.7;}
+  .order-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+  .order-name{font-family:var(--fd);font-size:17px;letter-spacing:1px;}
+  .order-date{font-size:10px;color:var(--muted);}
+  .order-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
+  .tag{font-family:var(--fd);font-size:11px;letter-spacing:1px;padding:2px 7px;border-radius:2px;background:rgba(255,255,255,0.07);}
+  .tag-blue{background:rgba(96,165,250,0.15);color:var(--blue);}
+  .tag-green{background:rgba(74,222,128,0.15);color:var(--green);}
+  .tag-orange{background:rgba(251,146,60,0.15);color:var(--orange);}
+  .tag-accent{background:rgba(255,221,0,0.15);color:var(--accent);}
+  .tag-red{background:rgba(248,113,113,0.15);color:var(--red);}
+  .order-fin{display:flex;justify-content:space-between;align-items:center;
+    padding-top:8px;border-top:1px solid var(--border);}
+  .order-winst{font-family:var(--fd);font-size:17px;color:var(--green);}
+  .order-winst.neg{color:var(--red);}
+  .order-actions{display:flex;gap:6px;margin-top:8px;}
+  .order-status-sel{flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--border);
+    color:var(--white);font-family:var(--fm);font-size:11px;padding:7px;border-radius:2px;-webkit-appearance:none;}
+
+  /* INKOOP CARD */
+  .inkoop-card{background:var(--card);border:1px solid var(--border);border-radius:4px;
+    padding:13px;margin-bottom:10px;border-left:3px solid var(--red);}
+  .inkoop-card.ontvangen{border-left-color:var(--green);}
+
+  /* WINST BIG */
+  .winst-big{text-align:center;padding:20px 0;}
+  .winst-big .wl{font-size:9px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;}
+  .winst-big .wa{font-family:var(--fd);font-size:60px;letter-spacing:-2px;line-height:1;}
+
+  .divider{height:1px;background:var(--border);margin:12px 0;}
+  .section-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .section-ttl{font-family:var(--fd);font-size:14px;letter-spacing:2px;color:var(--muted);}
+  .empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:11px;letter-spacing:2px;}
+
+  /* PRODUCT */
+  .product-card{background:var(--card);border:1px solid var(--border);border-radius:4px;
+    padding:13px;margin-bottom:8px;display:flex;align-items:center;gap:12px;}
+  .product-icon{width:40px;height:40px;border-radius:4px;border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .product-info{flex:1;}
+  .product-name{font-family:var(--fd);font-size:16px;letter-spacing:1px;margin-bottom:2px;}
+  .product-sub{font-size:10px;color:var(--muted);letter-spacing:1px;}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:200;display:none;align-items:flex-end;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:#181818;border-top:1px solid var(--border);width:100%;
+    padding:20px 16px 36px;max-height:90vh;overflow-y:auto;border-radius:12px 12px 0 0;}
+  .modal-title{font-family:var(--fd);font-size:20px;letter-spacing:3px;color:var(--accent);margin-bottom:16px;}
+  .modal-close{float:right;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;}
+
+  .info-box{background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);
+    border-radius:2px;padding:9px 11px;font-size:10px;color:var(--blue);letter-spacing:1px;margin-bottom:12px;}
+  .warn-box{background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.2);
+    border-radius:2px;padding:9px 11px;font-size:10px;color:var(--orange);letter-spacing:1px;margin-bottom:12px;}
+
+  .variant-row{display:grid;grid-template-columns:1fr 90px 60px 28px;gap:6px;align-items:center;margin-bottom:6px;}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--accent);color:var(--black);font-family:var(--fd);font-size:15px;
+    letter-spacing:3px;padding:11px 22px;border-radius:2px;z-index:999;
+    transition:transform .3s ease;white-space:nowrap;}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<input type="file" id="import-file-input" accept=".json" style="display:none" onchange="handleImport(this)">
+<div class="app-header">
+  <div class="app-title">KSV <span>BEHEER</span></div>
+  <div class="hdr-btns">
+    <button class="btn-sec" onclick="exportData()" style="color:var(--muted);font-size:11px" title="Backup downloaden">💾</button>
+    <button class="btn-sec" onclick="importData()" style="color:var(--muted);font-size:11px" title="Backup laden">📂</button>
+    <button class="btn-sec" onclick="openModal('modal-inkoop')" style="color:var(--red);border-color:var(--red)">+ INKOOP</button>
+    <button class="btn-sec" onclick="openModal('modal-verkoop')" style="color:var(--accent);border-color:var(--accent)">+ VERKOOP</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active"  onclick="showTab('dashboard')">DASHBOARD</div>
+  <div class="tab"         onclick="showTab('voorraad')">VOORRAAD</div>
+  <div class="tab"         onclick="showTab('verkoop')">VERKOOP</div>
+  <div class="tab"         onclick="showTab('inkoop')">INKOOP</div>
+  <div class="tab"         onclick="showTab('afgerond')">AFGEROND</div>
+  <div class="tab"         onclick="showTab('financieel')">FINANCIEEL</div>
+  <div class="tab"         onclick="showTab('producten')">PRODUCTEN</div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="content active" id="tab-dashboard">
+  <div id="dash-alerts"></div>
+  <div class="dash-grid">
+    <div class="dash-winst" style="grid-column:1/-1">
+      <div class="dl">Netto winst</div>
+      <div class="dv green" id="dash-winst">€0,00</div>
+    </div>
+    <div class="dash-tile">
+      <div class="dl">Omzet</div>
+      <div class="dv accent" id="dash-omzet">€0</div>
+      <div class="ds">Gesloten orders</div>
+    </div>
+    <div class="dash-tile">
+      <div class="dl">Inkoopkosten</div>
+      <div class="dv red" id="dash-inkoop">€0</div>
+      <div class="ds">Betaald</div>
+    </div>
+    <div class="dash-tile">
+      <div class="dl">Open orders</div>
+      <div class="dv orange" id="dash-open">0</div>
+      <div class="ds">Verkooporders</div>
+    </div>
+    <div class="dash-tile">
+      <div class="dl">Totaal stock</div>
+      <div class="dv" id="dash-stock">0</div>
+      <div class="ds">Stuks</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">VOORRAAD SNEL</div>
+    <div id="dash-voorraad-rows"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">VOORRAAD PER KLEUR</div>
+    <canvas id="chart-voorraad" height="180"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-title">WINST VS KOSTEN</div>
+    <canvas id="chart-winst" height="180"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-title">RECENTE ORDERS</div>
+    <div id="dash-recent"></div>
+  </div>
+</div>
+
+<!-- VOORRAAD -->
+<div class="content" id="tab-voorraad">
+  <div class="info-box">📦 Voorraad wordt automatisch bijgewerkt via Inkoop (ontvangen) en Verkoop (sluiten). Handmatig aanpassen is niet mogelijk.</div>
+  <div id="voorraad-grid" class="vrd-grid"></div>
+  <div class="card">
+    <div class="card-title">TOTAAL</div>
+    <div class="stat-row"><span class="stat-label">In stock</span><span class="stat-value accent" id="vrd-totaal">0</span></div>
+    <div class="stat-row"><span class="stat-label">Gereserveerd</span><span class="stat-value orange" id="vrd-res">0</span></div>
+    <div class="stat-row"><span class="stat-label">Vrij beschikbaar</span><span class="stat-value green" id="vrd-vrij">0</span></div>
+    <div class="stat-row"><span class="stat-label">Totaal verkocht</span><span class="stat-value" id="vrd-sold">0</span></div>
+  </div>
+</div>
+
+<!-- VERKOOP -->
+<div class="content" id="tab-verkoop">
+  <div id="verkoop-list"></div>
+</div>
+
+<!-- INKOOP -->
+<div class="content" id="tab-inkoop">
+  <div id="inkoop-list"></div>
+</div>
+
+<!-- AFGEROND -->
+<div class="content" id="tab-afgerond">
+  <div id="afgerond-list"></div>
+</div>
+
+<!-- FINANCIEEL -->
+<div class="content" id="tab-financieel">
+  <div class="card">
+    <div class="winst-big">
+      <div class="wl">Netto winst (gesloten orders)</div>
+      <div class="wa green" id="fin-winst">€0,00</div>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row"><span class="stat-label">Omzet gesloten orders</span><span class="stat-value" id="fin-omzet">€0</span></div>
+    <div class="stat-row"><span class="stat-label">Inkoopkosten (betaald)</span><span class="stat-value red" id="fin-inkoop">€0</span></div>
+    <div class="stat-row"><span class="stat-label">Verzendkosten (voor klant)</span><span class="stat-value blue" id="fin-vrzd">€0</span></div>
+    <div class="divider"></div>
+    <div class="stat-row"><span class="stat-label">Verwachte omzet (open)</span><span class="stat-value blue" id="fin-open-omzet">€0</span></div>
+    <div class="stat-row"><span class="stat-label">Inkoop onbetaald</span><span class="stat-value orange" id="fin-inkoop-open">€0</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title">PER PRODUCT</div>
+    <div id="fin-per-product"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">INSTELLINGEN</div>
+    <div class="form-group">
+      <label class="form-label">Verzendkosten per order (€)</label>
+      <input class="form-input" type="number" step="0.01" id="set-vrzd" value="6.95" onchange="saveSettings()">
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCTEN -->
+<div class="content" id="tab-producten">
+  <div class="section-hdr">
+    <div class="section-ttl">PRODUCTEN</div>
+    <button class="btn-sec" onclick="openModal('modal-product')">+ NIEUW</button>
+  </div>
+  <div id="product-list"></div>
+</div>
+
+<!-- MODAL: INKOOP -->
+<div class="modal-overlay" id="modal-inkoop">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-inkoop')">✕</button>
+    <div class="modal-title">INKOOPORDER</div>
+    <div class="warn-box">💸 Kosten worden direct geboekt. Voorraad stijgt na ontvangst.</div>
+    <div class="form-group">
+      <label class="form-label">Leverancier / omschrijving</label>
+      <input class="form-input" type="text" id="ink-leverancier" placeholder="Bijv. Leverancier caps...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Producten & aantallen</label>
+      <div id="ink-items-wrap"></div>
+      <button class="btn-sec" style="width:100%;margin-top:6px" onclick="addInkoopItem()">+ PRODUCT TOEVOEGEN</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Betaalstatus</label>
+      <div class="grid2">
+        <button class="sel-btn" onclick="sel(this,'ink-betaling','betaald')">✅ Betaald</button>
+        <button class="sel-btn" onclick="sel(this,'ink-betaling','onbetaald')">⏳ Nog betalen</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Verwachte leverdatum</label>
+      <input class="form-input" type="date" id="ink-datum">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notitie</label>
+      <input class="form-input" type="text" id="ink-notitie" placeholder="Optioneel...">
+    </div>
+    <button class="btn-primary" onclick="saveInkoop()">OPSLAAN</button>
+  </div>
+</div>
+
+<!-- MODAL: VERKOOP -->
+<div class="modal-overlay" id="modal-verkoop">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-verkoop')">✕</button>
+    <div class="modal-title">VERKOOPORDER</div>
+    <div class="form-group">
+      <label class="form-label">Naam klant</label>
+      <input class="form-input" type="text" id="vk-naam" placeholder="Naam klant...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Product</label>
+      <select class="form-select" id="vk-product" onchange="renderVkVariants()"></select>
+    </div>
+    <div class="form-group" id="vk-variant-wrap" style="display:none">
+      <label class="form-label">Variant / kleur</label>
+      <div id="vk-variant-grid" class="grid2"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Aantal</label>
+      <input class="form-input" type="number" id="vk-aantal" value="1" min="1">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Verkoopprijs per stuk (€)</label>
+      <input class="form-input" type="number" step="0.01" id="vk-prijs" value="20.00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Levering</label>
+      <div class="grid2">
+        <button class="sel-btn" onclick="sel(this,'vk-levering','verzenden')">📦 Verzenden</button>
+        <button class="sel-btn" onclick="sel(this,'vk-levering','langsbrengen')">🚗 Langsbrengen</button>
+        <button class="sel-btn" onclick="sel(this,'vk-levering','festival')">🎪 Festival</button>
+        <button class="sel-btn" onclick="sel(this,'vk-levering','reserveren')">🔒 Reserveren</button>
+      </div>
+    </div>
+    <div class="info-box" id="vk-vrzd-info" style="display:none">📦 Verzendkosten €<span id="vk-vrzd-amt">6,95</span> worden berekend bij afsluiten.</div>
+    <div class="form-group">
+      <label class="form-label">Betaling ontvangen?</label>
+      <div class="grid2">
+        <button class="sel-btn" onclick="sel(this,'vk-betaling','betaald')">✅ Betaald</button>
+        <button class="sel-btn" onclick="sel(this,'vk-betaling','onbetaald')">⏳ Nog betalen</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notitie</label>
+      <input class="form-input" type="text" id="vk-notitie" placeholder="Adres, opmerking...">
+    </div>
+    <button class="btn-primary" onclick="saveVerkoop()">ORDER OPSLAAN</button>
+  </div>
+</div>
+
+<!-- MODAL: PRODUCT -->
+<div class="modal-overlay" id="modal-product">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-product')">✕</button>
+    <div class="modal-title" id="prod-modal-title">NIEUW PRODUCT</div>
+    <div class="form-group">
+      <label class="form-label">Naam</label>
+      <input class="form-input" type="text" id="prod-naam" placeholder="Bijv. Snapback Cap">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Icoon (emoji)</label>
+      <input class="form-input" type="text" id="prod-icon" placeholder="🧢" maxlength="4">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Standaard inkoopprijs (€)</label>
+      <input class="form-input" type="number" step="0.01" id="prod-inkoop" value="10.20">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Standaard verkoopprijs (€)</label>
+      <input class="form-input" type="number" step="0.01" id="prod-verkoop" value="20.00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Varianten</label>
+      <div id="prod-variants-wrap"></div>
+      <button class="btn-sec" style="width:100%;margin-top:6px" onclick="addVariant()">+ VARIANT</button>
+    </div>
+    <input type="hidden" id="prod-edit-id">
+    <button class="btn-primary" onclick="saveProduct()">OPSLAAN</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════
+// STATE & STORAGE
+// ════════════════════════════════
+let S = {
+  producten:[{
+    id:'caps',naam:'Snapback Cap',icon:'🧢',inkoop:10.20,verkoop:20.00,
+    varianten:[
+      {id:'black', naam:'Black', kleur:'#2a2a2a'},
+      {id:'purple',naam:'Purple',kleur:'#6b21c8'},
+      {id:'navy',  naam:'Navy',  kleur:'#1e3a5f'},
+      {id:'pink',  naam:'Pink',  kleur:'#e8a0b0'},
+    ]
+  }],
+  voorraad:{}, // key: prodId__varId
+  inkoopOrders:[],
+  verkoopOrders:[],
+  settings:{verzend:6.95}
+};
+
+function save(){try{localStorage.setItem('ksv3',JSON.stringify(S));}catch(e){}}
+function load(){try{const r=localStorage.getItem('ksv3');if(r)S=JSON.parse(r);}catch(e){}}
+
+// ════════════════════════════════
+// HELPERS
+// ════════════════════════════════
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+function fmt(n){return '€'+parseFloat(n||0).toFixed(2).replace('.',',');}
+function today(){return new Date().toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'2-digit'});}
+function sk(pId,vId){return pId+'__'+(vId||'_');}
+function getStock(pId,vId){return S.voorraad[sk(pId,vId)]||0;}
+function setStock(pId,vId,n){S.voorraad[sk(pId,vId)]=Math.max(0,n);}
+function addStock(pId,vId,d){setStock(pId,vId,getStock(pId,vId)+d);}
+function getProd(id){return S.producten.find(p=>p.id===id);}
+function getVar(prod,vId){return prod?.varianten?.find(v=>v.id===vId);}
+function getReserved(pId,vId){
+  return S.verkoopOrders.filter(o=>o.prodId===pId&&o.variantId===vId&&o.status==='reserveren'&&!o.gesloten)
+    .reduce((s,o)=>s+(o.aantal||1),0);
+}
+
+const STATUS_LBL={
+  nieuw:'🆕 NIEUW',ingepakt:'📦 INGEPAKT',verzenden:'📦 VERZENDEN',
+  verzonden:'✅ VERZONDEN',langsbrengen:'🚗 LANGSBRENGEN',
+  festival:'🎪 FESTIVAL',reserveren:'🔒 RESERVEREN',afgeleverd:'✅ AFGELEVERD'
+};
+const STATUS_TAG={
+  nieuw:'tag-blue',ingepakt:'tag-orange',verzenden:'tag-blue',
+  verzonden:'tag-green',langsbrengen:'tag-green',festival:'tag-accent',
+  reserveren:'tag-orange',afgeleverd:'tag-green'
+};
+
+// ════════════════════════════════
+// TABS
+// ════════════════════════════════
+const TAB_NAMES=['dashboard','voorraad','verkoop','inkoop','afgerond','financieel','producten'];
+function showTab(name){
+  document.querySelectorAll('.content').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.querySelectorAll('.tab')[TAB_NAMES.indexOf(name)]?.classList.add('active');
+  ({dashboard:renderDashboard,voorraad:renderVoorraad,verkoop:renderVerkoop,
+    inkoop:renderInkoop,afgerond:renderAfgerond,financieel:renderFinancieel,
+    producten:renderProducten})[name]?.();
+}
+
+// ════════════════════════════════
+// MODAL
+// ════════════════════════════════
+let _sel={};
+function openModal(id){
+  if(id==='modal-inkoop')prepInkoop();
+  if(id==='modal-verkoop')prepVerkoop();
+  if(id==='modal-product')prepProduct();
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function sel(el,group,val){
+  document.querySelectorAll(`[onclick*="sel(this,'${group}'"]`).forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');_sel[group]=val;
+  if(group==='vk-levering'){
+    document.getElementById('vk-vrzd-info').style.display=val==='verzenden'?'block':'none';
+    document.getElementById('vk-vrzd-amt').textContent=fmt(S.settings.verzend||6.95).replace('€','');
+  }
+}
+['modal-inkoop','modal-verkoop','modal-product'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)closeModal(id);});
+});
+
+// ════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════
+function renderDashboard(){
+  const vrzd=S.settings.verzend||6.95;
+  let omzet=0,betaaldeInkoop=0,verzendK=0,openOrders=0,totStock=0;
+
+  S.verkoopOrders.filter(o=>o.gesloten).forEach(o=>{
+    const pr=o.prijs||getProd(o.prodId)?.verkoop||20;
+    omzet+=(o.aantal||1)*pr;
+  });
+  S.inkoopOrders.filter(o=>o.betaling==='betaald').forEach(o=>{
+    betaaldeInkoop+=(o.items||[]).reduce((s,i)=>s+i.aantal*(i.inkoop||10.20),0);
+  });
+  openOrders=S.verkoopOrders.filter(o=>!o.gesloten).length;
+  S.producten.forEach(p=>(p.varianten||[]).forEach(v=>totStock+=getStock(p.id,v.id)));
+
+  const winst=omzet-betaaldeInkoop;
+  document.getElementById('dash-winst').textContent=fmt(winst);
+  document.getElementById('dash-winst').className='dv '+(winst>=0?'green':'red');
+  document.getElementById('dash-omzet').textContent=fmt(omzet);
+  document.getElementById('dash-inkoop').textContent=fmt(betaaldeInkoop);
+  document.getElementById('dash-open').textContent=openOrders;
+  document.getElementById('dash-stock').textContent=totStock;
+
+  // Alerts
+  const alerts=document.getElementById('dash-alerts');
+  let al='';
+  S.producten.forEach(p=>(p.varianten||[]).forEach(v=>{
+    const st=getStock(p.id,v.id);
+    if(st===0)al+=`<div class="alert-box"><div class="al">⚠️ ${p.naam} ${v.naam} — UITVERKOCHT</div><div class="as">Bestel bij voor meer voorraad</div></div>`;
+    else if(st<=2)al+=`<div class="alert-box alert-orange"><div class="al">⚡ ${p.naam} ${v.naam} — NOG ${st} STUKS</div><div class="as">Bijna op!</div></div>`;
+  }));
+  const onbetInk=S.inkoopOrders.filter(o=>o.betaling!=='betaald');
+  if(onbetInk.length)al+=`<div class="alert-box alert-orange"><div class="al">💸 ${onbetInk.length} inkooporder(s) onbetaald</div><div class="as">Ga naar Inkoop tab</div></div>`;
+  const openBet=S.verkoopOrders.filter(o=>!o.gesloten&&o.betaling!=='betaald');
+  if(openBet.length)al+=`<div class="alert-box alert-orange"><div class="al">💰 ${openBet.length} verkooporder(s) betaling open</div><div class="as">Ga naar Verkoop tab</div></div>`;
+  alerts.innerHTML=al;
+
+  // Voorraad snel
+  const vr=document.getElementById('dash-voorraad-rows');
+  vr.innerHTML='';
+  S.producten.forEach(p=>(p.varianten||[]).forEach(v=>{
+    const st=getStock(p.id,v.id);
+    const res=getReserved(p.id,v.id);
+    const avail=Math.max(0,st-res);
+    const col=st===0?'var(--red)':st<=2?'var(--orange)':'var(--green)';
+    vr.innerHTML+=`<div class="stat-row">
+      <span class="stat-label" style="display:flex;align-items:center;gap:6px">
+        <span style="width:10px;height:10px;border-radius:50%;background:${v.kleur||'#555'};flex-shrink:0"></span>
+        ${p.naam} · ${v.naam}
+      </span>
+      <span style="font-family:var(--fd);font-size:20px;color:${col}">${st}</span>
+    </div>`;
+  }));
+
+  // Recente orders (laatste 5)
+  const rec=document.getElementById('dash-recent');
+  const recent=[...S.verkoopOrders].reverse().slice(0,5);
+  if(!recent.length){rec.innerHTML='<div class="empty" style="padding:12px">Geen orders</div>';}
+  else{rec.innerHTML=recent.map(o=>{
+    const prod=getProd(o.prodId);const v=getVar(prod,o.variantId);
+    return `<div class="stat-row">
+      <div>
+        <div style="font-family:var(--fd);font-size:15px">${o.naam}</div>
+        <div style="font-size:10px;color:var(--muted)">${prod?.naam||''} ${v?'· '+v.naam:''} · ${o.datum}</div>
+      </div>
+      <span class="tag ${STATUS_TAG[o.status]||''}">${STATUS_LBL[o.status]||o.status}</span>
+    </div>`;
+  }).join('');}
+
+  // Charts
+  renderCharts();
+}
+
+let _charts={};
+function renderCharts(){
+  // Chart 1: Voorraad per variant (bar)
+  const vc=document.getElementById('chart-voorraad');
+  if(!vc)return;
+  const labels=[];const stocks=[];const colors=[];const borderColors=[];
+  S.producten.forEach(p=>(p.varianten||[]).forEach(v=>{
+    labels.push(v.naam);
+    stocks.push(getStock(p.id,v.id));
+    colors.push(v.kleur||'#555');
+    borderColors.push(v.kleur||'#555');
+  }));
+
+  if(_charts.voorraad)_charts.voorraad.destroy();
+  _charts.voorraad=new Chart(vc,{
+    type:'bar',
+    data:{labels,datasets:[{
+      label:'Voorraad',data:stocks,
+      backgroundColor:colors.map(c=>c+'99'),
+      borderColor:colors,borderWidth:2,borderRadius:3
+    }]},
+    options:{
+      responsive:true,plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>`${ctx.raw} stuks`}}},
+      scales:{
+        x:{ticks:{color:'rgba(245,240,232,0.5)',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'}},
+        y:{ticks:{color:'rgba(245,240,232,0.5)',font:{size:11}},grid:{color:'rgba(255,255,255,0.05)'},beginAtZero:true}
+      }
+    }
+  });
+
+  // Chart 2: Winst vs Kosten (doughnut)
+  const wc=document.getElementById('chart-winst');
+  if(!wc)return;
+  const vrzd=S.settings.verzend||6.95;
+  let omzet=0,inkoopK=0,verzendK=0;
+  S.verkoopOrders.filter(o=>o.gesloten).forEach(o=>{
+    const pr=o.prijs||getProd(o.prodId)?.verkoop||20;
+    omzet+=(o.aantal||1)*pr;
+  });
+  S.inkoopOrders.filter(o=>o.betaling==='betaald').forEach(o=>{
+    inkoopK+=(o.items||[]).reduce((s,i)=>s+i.aantal*(i.inkoop||10.20),0);
+  });
+  const netto=Math.max(0,omzet-inkoopK);
+
+  if(_charts.winst)_charts.winst.destroy();
+  if(omzet===0&&inkoopK===0){
+    wc.parentElement.querySelector('.card-title').textContent='WINST VS KOSTEN — nog geen data';
+    return;
+  }
+  _charts.winst=new Chart(wc,{
+    type:'doughnut',
+    data:{
+      labels:['Netto winst','Inkoopkosten'],
+      datasets:[{
+        data:[netto,inkoopK],
+        backgroundColor:['rgba(74,222,128,0.8)','rgba(248,113,113,0.8)'],
+        borderColor:['#4ade80','#f87171'],
+        borderWidth:2
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:'bottom',labels:{color:'rgba(245,240,232,0.6)',font:{size:11},padding:12}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.label}: €${ctx.raw.toFixed(2)}`}}
+      }
+    }
+  });
+}
+
+// ════════════════════════════════
+// VOORRAAD (readonly)
+// ════════════════════════════════
+function renderVoorraad(){
+  const grid=document.getElementById('voorraad-grid');
+  grid.innerHTML='';
+  let totaal=0,res=0,vrij=0;
+  const sold=S.verkoopOrders.filter(o=>o.gesloten&&o.voorraadAfgeboekt).reduce((s,o)=>s+(o.aantal||1),0);
+
+  S.producten.forEach(prod=>{
+    (prod.varianten||[]).forEach(v=>{
+      const st=getStock(prod.id,v.id);
+      const rv=getReserved(prod.id,v.id);
+      const av=Math.max(0,st-rv);
+      totaal+=st;res+=rv;vrij+=av;
+      const nc=st===0?'out':st<=2?'low':'';
+      grid.innerHTML+=`
+        <div class="kleur-card">
+          ${rv>0?`<div class="res-badge">${rv} RES</div>`:''}
+          <div class="kleur-dot" style="background:${v.kleur||'#555'}"></div>
+          <div class="kleur-name">${v.naam}</div>
+          <div class="stock-num ${nc}">${st}</div>
+          <div class="stock-meta">${av} vrij · ${rv} res</div>
+        </div>`;
+    });
+  });
+
+  document.getElementById('vrd-totaal').textContent=totaal;
+  document.getElementById('vrd-res').textContent=res;
+  document.getElementById('vrd-vrij').textContent=vrij;
+  document.getElementById('vrd-sold').textContent=sold;
+}
+
+// ════════════════════════════════
+// VERKOOP
+// ════════════════════════════════
+function renderVerkoop(){
+  const list=document.getElementById('verkoop-list');
+  const open=S.verkoopOrders.filter(o=>!o.gesloten);
+  if(!open.length){list.innerHTML='<div class="empty">Geen open verkooporders</div>';return;}
+  list.innerHTML=open.slice().reverse().map(o=>orderCard(o,false)).join('');
+}
+
+function renderAfgerond(){
+  const list=document.getElementById('afgerond-list');
+  const done=S.verkoopOrders.filter(o=>o.gesloten);
+  if(!done.length){list.innerHTML='<div class="empty">Nog geen afgeronde orders</div>';return;}
+  list.innerHTML=done.slice().reverse().map(o=>orderCard(o,true)).join('');
+}
+
+function orderCard(o,closed){
+  const prod=getProd(o.prodId);const v=getVar(prod,o.variantId);
+  const prijs=o.prijs||prod?.verkoop||20;const inkoop=prod?.inkoop||10.20;
+  const antal=o.aantal||1;const vrzd=S.settings.verzend||6.95;
+  const heeftVerzend=(o.levering==='verzenden'||o.levering==='verzonden');
+  const omzet=antal*prijs;const kosten=antal*inkoop;const winst=omzet-kosten;
+
+  return `<div class="order-card s-${closed?'gesloten':o.status}">
+    <div class="order-head">
+      <div class="order-name">${o.naam}</div>
+      <div class="order-date">${o.datum}</div>
+    </div>
+    <div class="order-tags">
+      ${v?`<span class="tag" style="border-left:3px solid ${v.kleur||'#555'}">${prod?.naam||''} · ${v.naam}</span>`:`<span class="tag">${prod?.naam||o.prodId}</span>`}
+      ${antal>1?`<span class="tag">${antal}x</span>`:''}
+      <span class="tag ${STATUS_TAG[o.status]||''}">${STATUS_LBL[o.status]||o.status}</span>
+      <span class="tag ${o.betaling==='betaald'?'tag-green':'tag-orange'}">${o.betaling==='betaald'?'✅ BETAALD':'⏳ BETALING OPEN'}</span>
+      ${heeftVerzend?`<span class="tag tag-blue">📦 +€${(vrzd).toFixed(2)} verzend (klant betaalt)</span>`:''}
+    </div>
+    ${o.notitie?`<div style="font-size:10px;color:var(--muted);margin-bottom:6px">${o.notitie}</div>`:''}
+    <div class="order-fin">
+      <div><div style="font-size:9px;color:var(--muted)">WINST</div>
+        <div class="order-winst ${winst<0?'neg':''}">${fmt(winst)}</div></div>
+      <div style="text-align:right;font-size:10px;color:var(--muted)">
+        <div>Omzet: ${fmt(omzet)}</div><div>Inkoop: −${fmt(antal*inkoop)}</div>
+        ${heeftVerzend?`<div style="color:var(--blue)">Verzend: klant betaalt</div>`:''}
+      </div>
+    </div>
+    ${!closed?`
+    <div class="order-actions">
+      <select class="order-status-sel" onchange="updateVkStatus('${o.id}',this.value)">
+        <option value="nieuw"        ${o.status==='nieuw'?'selected':''}>🆕 Nieuw</option>
+        <option value="ingepakt"     ${o.status==='ingepakt'?'selected':''}>📦 Ingepakt</option>
+        <option value="verzenden"    ${o.status==='verzenden'?'selected':''}>📦 Verzenden</option>
+        <option value="verzonden"    ${o.status==='verzonden'?'selected':''}>✅ Verzonden</option>
+        <option value="langsbrengen" ${o.status==='langsbrengen'?'selected':''}>🚗 Langsbrengen</option>
+        <option value="festival"     ${o.status==='festival'?'selected':''}>🎪 Festival</option>
+        <option value="reserveren"   ${o.status==='reserveren'?'selected':''}>🔒 Reserveren</option>
+        <option value="afgeleverd"   ${o.status==='afgeleverd'?'selected':''}>✅ Afgeleverd</option>
+      </select>
+      <button class="btn-sec" onclick="sluitOrder('${o.id}')" style="color:var(--green);border-color:var(--green);white-space:nowrap">SLUITEN ✓</button>
+      <button class="btn-danger" onclick="delVkOrder('${o.id}')">✕</button>
+    </div>`:
+    `<div style="margin-top:6px;font-size:10px;color:var(--muted)">Gesloten op ${o.sluitDatum||'–'}</div>`}
+  </div>`;
+}
+
+function updateVkStatus(id,status){
+  const o=S.verkoopOrders.find(x=>x.id===id);if(!o)return;
+  o.status=status;
+  if(['verzonden','afgeleverd'].includes(status)&&!o.voorraadAfgeboekt){
+    addStock(o.prodId,o.variantId,-(o.aantal||1));o.voorraadAfgeboekt=true;
+  }
+  save();renderVerkoop();renderVoorraad();renderDashboard();showToast('STATUS BIJGEWERKT');
+}
+
+function sluitOrder(id){
+  const o=S.verkoopOrders.find(x=>x.id===id);if(!o)return;
+  if(!o.voorraadAfgeboekt){addStock(o.prodId,o.variantId,-(o.aantal||1));o.voorraadAfgeboekt=true;}
+  o.gesloten=true;o.sluitDatum=today();
+  save();renderVerkoop();renderVoorraad();renderAfgerond();renderDashboard();showToast('ORDER GESLOTEN');
+}
+
+function delVkOrder(id){
+  const o=S.verkoopOrders.find(x=>x.id===id);if(!o)return;
+  if(o.voorraadAfgeboekt)addStock(o.prodId,o.variantId,o.aantal||1);
+  S.verkoopOrders=S.verkoopOrders.filter(x=>x.id!==id);
+  save();renderVerkoop();renderVoorraad();renderDashboard();showToast('VERWIJDERD');
+}
+
+// ════════════════════════════════
+// INKOOP
+// ════════════════════════════════
+function renderInkoop(){
+  const list=document.getElementById('inkoop-list');
+  const open=S.inkoopOrders.filter(o=>!o.ontvangen);
+  const recv=S.inkoopOrders.filter(o=>o.ontvangen);
+  let html='';
+  if(!open.length&&!recv.length){list.innerHTML='<div class="empty">Geen inkooporders</div>';return;}
+  if(open.length){
+    html+=`<div class="section-hdr"><div class="section-ttl">OPEN (${open.length})</div></div>`;
+    html+=open.slice().reverse().map(o=>inkoopCard(o)).join('');
+  }
+  if(recv.length){
+    html+=`<div class="section-hdr" style="margin-top:16px"><div class="section-ttl">ONTVANGEN (${recv.length})</div></div>`;
+    html+=recv.slice().reverse().map(o=>inkoopCard(o)).join('');
+  }
+  list.innerHTML=html;
+}
+
+function inkoopCard(o){
+  const totaal=(o.items||[]).reduce((s,i)=>s+i.aantal*(i.inkoop||10.20),0);
+  const items=(o.items||[]).map(i=>{
+    const p=getProd(i.prodId);const v=getVar(p,i.variantId);
+    return `${i.aantal}× ${p?.naam||i.prodId}${v?' '+v.naam:''}`;
+  }).join(', ');
+  return `<div class="inkoop-card ${o.ontvangen?'ontvangen':''}">
+    <div class="order-head">
+      <div class="order-name">${o.leverancier||'Inkoop'}</div>
+      <div class="order-date">${o.datum}</div>
+    </div>
+    <div class="order-tags">
+      <span class="tag">${items}</span>
+      <span class="tag ${o.betaling==='betaald'?'tag-green':'tag-orange'}">${o.betaling==='betaald'?'✅ BETAALD':'⏳ ONBETAALD'}</span>
+      ${o.ontvangen?`<span class="tag tag-green">📦 ONTVANGEN ${o.ontvangstDatum||''}</span>`:'<span class="tag tag-orange">⏳ ONDERWEG</span>'}
+      ${o.leverdatum?`<span class="tag tag-blue">📅 ${o.leverdatum}</span>`:''}
+    </div>
+    ${o.notitie?`<div style="font-size:10px;color:var(--muted);margin-bottom:6px">${o.notitie}</div>`:''}
+    <div class="order-fin">
+      <div><div style="font-size:9px;color:var(--muted)">TOTAAL KOSTEN</div>
+        <div style="font-family:var(--fd);font-size:17px;color:var(--red)">${fmt(totaal)}</div></div>
+      <div>
+        ${!o.ontvangen?`<button class="btn-sec" style="color:var(--green);border-color:var(--green)" onclick="ontvangInkoop('${o.id}')">ONTVANGEN ✓</button>`:''}
+      </div>
+    </div>
+    <div class="order-actions" style="margin-top:8px">
+      ${o.betaling!=='betaald'?`<button class="btn-sec" onclick="betaalInkoop('${o.id}')" style="flex:1;color:var(--green);border-color:var(--green)">MARKEER BETAALD</button>`:''}
+      <button class="btn-danger" onclick="delInkoop('${o.id}')">✕</button>
+    </div>
+  </div>`;
+}
+
+function ontvangInkoop(id){
+  const o=S.inkoopOrders.find(x=>x.id===id);
+  if(!o||o.ontvangen)return;
+  o.ontvangen=true;o.ontvangstDatum=today();
+  let totaal=0;
+  (o.items||[]).forEach(i=>{
+    if(i.prodId){addStock(i.prodId,i.variantId||null,i.aantal);totaal+=i.aantal;}
+  });
+  save();renderInkoop();renderVoorraad();renderDashboard();
+  showToast('VOORRAAD +'+totaal+' BIJGEWERKT');
+}
+
+function betaalInkoop(id){
+  const o=S.inkoopOrders.find(x=>x.id===id);
+  if(o){o.betaling='betaald';save();renderInkoop();renderDashboard();showToast('BETALING GEMARKEERD');}
+}
+
+function delInkoop(id){
+  const o=S.inkoopOrders.find(x=>x.id===id);if(!o)return;
+  if(o.ontvangen)(o.items||[]).forEach(i=>addStock(i.prodId,i.variantId||null,-i.aantal));
+  S.inkoopOrders=S.inkoopOrders.filter(x=>x.id!==id);
+  save();renderInkoop();renderVoorraad();renderDashboard();showToast('VERWIJDERD');
+}
+
+// ════════════════════════════════
+// FINANCIEEL
+// ════════════════════════════════
+function renderFinancieel(){
+  const vrzd=S.settings.verzend||6.95;
+  let omzet=0,betaaldeInkoop=0,verzendK=0,openOmzet=0,openInkoop=0;
+
+  S.verkoopOrders.filter(o=>o.gesloten).forEach(o=>{
+    const pr=o.prijs||getProd(o.prodId)?.verkoop||20;
+    omzet+=(o.aantal||1)*pr;
+  });
+  S.inkoopOrders.filter(o=>o.betaling==='betaald').forEach(o=>{
+    betaaldeInkoop+=(o.items||[]).reduce((s,i)=>s+i.aantal*(i.inkoop||10.20),0);
+  });
+  S.verkoopOrders.filter(o=>!o.gesloten).forEach(o=>{
+    openOmzet+=(o.aantal||1)*(o.prijs||getProd(o.prodId)?.verkoop||20);
+  });
+  S.inkoopOrders.filter(o=>o.betaling!=='betaald').forEach(o=>{
+    openInkoop+=(o.items||[]).reduce((s,i)=>s+i.aantal*(i.inkoop||10.20),0);
+  });
+
+  const winst=omzet-betaaldeInkoop;
+  document.getElementById('fin-winst').textContent=fmt(winst);
+  document.getElementById('fin-winst').className='wa '+(winst>=0?'green':'red');
+  document.getElementById('fin-omzet').textContent=fmt(omzet);
+  // Bereken totale verzendkosten (info, niet aftrekken)
+  let totVerzend=0;
+  S.verkoopOrders.filter(o=>o.gesloten).forEach(o=>{
+    if(o.levering==='verzenden'||o.status==='verzonden')totVerzend+=vrzd;
+  });
+  document.getElementById('fin-inkoop').textContent='−'+fmt(betaaldeInkoop);
+  document.getElementById('fin-vrzd').textContent=fmt(totVerzend)+' (klant betaalt)';
+  document.getElementById('fin-open-omzet').textContent=fmt(openOmzet);
+  document.getElementById('fin-inkoop-open').textContent=fmt(openInkoop);
+
+  document.getElementById('fin-per-product').innerHTML=S.producten.map(prod=>{
+    const orders=S.verkoopOrders.filter(o=>o.prodId===prod.id&&o.gesloten);
+    const totN=orders.reduce((s,o)=>s+(o.aantal||1),0);
+    const totW=orders.reduce((s,o)=>{
+      return s+((o.aantal||1)*(o.prijs||prod.verkoop))-((o.aantal||1)*prod.inkoop);
+    },0);
+    return `<div class="stat-row">
+      <span class="stat-label">${prod.icon||'📦'} ${prod.naam}</span>
+      <span style="font-size:10px;color:var(--muted);text-align:right">
+        ${totN} verkocht &nbsp;
+        <span style="font-family:var(--fd);font-size:17px;color:${totW>=0?'var(--green)':'var(--red)'}">${fmt(totW)}</span>
+      </span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('set-vrzd').value=vrzd;
+}
+
+function saveSettings(){
+  S.settings.verzend=parseFloat(document.getElementById('set-vrzd').value)||6.95;
+  save();showToast('OPGESLAGEN');
+}
+
+// ════════════════════════════════
+// PRODUCTEN
+// ════════════════════════════════
+function renderProducten(){
+  document.getElementById('product-list').innerHTML=S.producten.map(p=>`
+    <div class="product-card">
+      <div class="product-icon">${p.icon||'📦'}</div>
+      <div class="product-info">
+        <div class="product-name">${p.naam}</div>
+        <div class="product-sub">Inkoop: ${fmt(p.inkoop)} · Verkoop: ${fmt(p.verkoop)}</div>
+        <div class="product-sub" style="margin-top:2px">${(p.varianten||[]).map(v=>`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${v.kleur||'#555'};margin-right:3px;vertical-align:middle"></span>${v.naam}`).join(' · ')}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <button class="btn-sec" style="font-size:11px;padding:6px 10px" onclick="editProduct('${p.id}')">EDIT</button>
+        <button class="btn-danger" style="font-size:11px;padding:6px 10px" onclick="delProduct('${p.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+// ════════════════════════════════
+// MODAL: INKOOP
+// ════════════════════════════════
+function prepInkoop(){
+  document.getElementById('ink-leverancier').value='';
+  document.getElementById('ink-notitie').value='';
+  document.getElementById('ink-datum').value='';
+  _sel['ink-betaling']=null;
+  document.querySelectorAll('#modal-inkoop .sel-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('ink-items-wrap').innerHTML='';
+  addInkoopItem();
+}
+
+function addInkoopItem(){
+  const wrap=document.getElementById('ink-items-wrap');
+  const idx=Date.now();
+  const div=document.createElement('div');
+  div.id='irow-'+idx;
+  div.style='margin-bottom:10px;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:2px';
+  div.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:10px;letter-spacing:2px;color:var(--muted)">PRODUCT</span>
+      <button class="btn-danger" style="padding:2px 8px;font-size:12px" onclick="document.getElementById('irow-${idx}').remove()">✕</button>
+    </div>
+    <select class="form-select" id="iprod-${idx}" onchange="updateInkVar(${idx})" style="margin-bottom:6px">
+      ${S.producten.map(p=>`<option value="${p.id}">${p.icon||''} ${p.naam}</option>`).join('')}
+    </select>
+    <div id="ivar-${idx}"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
+      <div><label class="form-label">Aantal</label><input class="form-input" type="number" id="iaant-${idx}" value="1" min="1" style="padding:8px"></div>
+      <div><label class="form-label">Inkoop per stuk (€)</label><input class="form-input" type="number" step="0.01" id="iprijs-${idx}" style="padding:8px"></div>
+    </div>`;
+  wrap.appendChild(div);
+  updateInkVar(idx);
+}
+
+function updateInkVar(idx){
+  const prodId=document.getElementById('iprod-'+idx)?.value;
+  const prod=getProd(prodId);
+  const varWrap=document.getElementById('ivar-'+idx);
+  if(!varWrap)return;
+  if(prod?.inkoop)document.getElementById('iprijs-'+idx).value=prod.inkoop.toFixed(2);
+  if(prod?.varianten?.length){
+    varWrap.innerHTML=`<label class="form-label">Variant</label>
+      <select class="form-select" id="ivar-sel-${idx}">
+        ${prod.varianten.map(v=>`<option value="${v.id}">${v.naam}</option>`).join('')}
+      </select>`;
+  } else {
+    varWrap.innerHTML='';
+  }
+}
+
+function saveInkoop(){
+  const leverancier=document.getElementById('ink-leverancier').value.trim();
+  const betaling=_sel['ink-betaling'];
+  if(!leverancier){showToast('LEVERANCIER INVULLEN');return;}
+  if(!betaling){showToast('BETALING KIEZEN');return;}
+
+  const wrap=document.getElementById('ink-items-wrap');
+  const items=[];
+  wrap.querySelectorAll('[id^="irow-"]').forEach(row=>{
+    const idx=row.id.replace('irow-','');
+    const prodEl=document.getElementById('iprod-'+idx);
+    const aantalEl=document.getElementById('iaant-'+idx);
+    const prijsEl=document.getElementById('iprijs-'+idx);
+    const varEl=document.getElementById('ivar-sel-'+idx);
+    if(!prodEl||!aantalEl)return;
+    items.push({
+      prodId:prodEl.value,
+      variantId:varEl?.value||null,
+      aantal:parseInt(aantalEl.value)||1,
+      inkoop:parseFloat(prijsEl?.value)||10.20
+    });
+  });
+
+  if(!items.length){showToast('MINIMAAL 1 PRODUCT');return;}
+
+  S.inkoopOrders.push({
+    id:uid(),leverancier,betaling,datum:today(),
+    leverdatum:document.getElementById('ink-datum').value||null,
+    notitie:document.getElementById('ink-notitie').value.trim(),
+    items,ontvangen:false
+  });
+  save();closeModal('modal-inkoop');renderInkoop();renderDashboard();
+  showToast('INKOOPORDER OPGESLAGEN');
+}
+
+// ════════════════════════════════
+// MODAL: VERKOOP
+// ════════════════════════════════
+let _vkVar=null;
+function prepVerkoop(){
+  document.getElementById('vk-naam').value='';
+  document.getElementById('vk-notitie').value='';
+  document.getElementById('vk-aantal').value='1';
+  _vkVar=null;
+  _sel['vk-levering']=null;_sel['vk-betaling']=null;
+  document.querySelectorAll('#modal-verkoop .sel-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('vk-vrzd-info').style.display='none';
+  const sel2=document.getElementById('vk-product');
+  sel2.innerHTML=S.producten.map(p=>`<option value="${p.id}">${p.icon||''} ${p.naam}</option>`).join('');
+  renderVkVariants();
+}
+
+function renderVkVariants(){
+  const prodId=document.getElementById('vk-product').value;
+  const prod=getProd(prodId);
+  document.getElementById('vk-prijs').value=prod?.verkoop||20;
+  const wrap=document.getElementById('vk-variant-wrap');
+  const grid=document.getElementById('vk-variant-grid');
+  _vkVar=null;
+  if(prod?.varianten?.length){
+    wrap.style.display='block';
+    grid.innerHTML=prod.varianten.map(v=>{
+      const st=getStock(prodId,v.id);const rv=getReserved(prodId,v.id);const av=Math.max(0,st-rv);
+      return `<button class="sel-btn" onclick="selVkVar(this,'${v.id}')">
+        <span class="cdot" style="background:${v.kleur||'#555'}"></span>
+        ${v.naam} <span style="font-size:10px;color:var(--muted)">(${av})</span>
+      </button>`;
+    }).join('');
+  } else {
+    wrap.style.display='none';grid.innerHTML='';
+  }
+}
+
+function selVkVar(el,id){
+  document.querySelectorAll('#vk-variant-grid .sel-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');_vkVar=id;
+}
+
+function saveVerkoop(){
+  const naam=document.getElementById('vk-naam').value.trim();
+  const prodId=document.getElementById('vk-product').value;
+  const aantal=parseInt(document.getElementById('vk-aantal').value)||1;
+  const prijs=parseFloat(document.getElementById('vk-prijs').value)||20;
+  const levering=_sel['vk-levering'];const betaling=_sel['vk-betaling'];
+  const prod=getProd(prodId);
+
+  if(!naam){showToast('NAAM INVULLEN');return;}
+  if(prod?.varianten?.length&&!_vkVar){showToast('VARIANT KIEZEN');return;}
+  if(!levering){showToast('LEVERING KIEZEN');return;}
+  if(!betaling){showToast('BETALING KIEZEN');return;}
+
+  if(levering!=='reserveren'){
+    const avail=Math.max(0,getStock(prodId,_vkVar||'')-getReserved(prodId,_vkVar||''));
+    if(avail<aantal&&!confirm(`Voorraad te laag (${avail} beschikbaar). Toch opslaan?`))return;
+  }
+
+  S.verkoopOrders.push({
+    id:uid(),naam,prodId,variantId:_vkVar||null,
+    aantal,prijs,levering,betaling,status:'nieuw',
+    datum:today(),notitie:document.getElementById('vk-notitie').value.trim(),
+    gesloten:false,voorraadAfgeboekt:false
+  });
+  save();closeModal('modal-verkoop');renderVerkoop();renderVoorraad();renderDashboard();
+  showToast('ORDER OPGESLAGEN');
+}
+
+// ════════════════════════════════
+// MODAL: PRODUCT
+// ════════════════════════════════
+let _variants=[];let _editProdId=null;
+function prepProduct(prodId=null){
+  _editProdId=prodId;_variants=[];
+  document.getElementById('prod-modal-title').textContent=prodId?'PRODUCT BEWERKEN':'NIEUW PRODUCT';
+  document.getElementById('prod-edit-id').value=prodId||'';
+  if(prodId){
+    const p=getProd(prodId);
+    document.getElementById('prod-naam').value=p.naam;
+    document.getElementById('prod-icon').value=p.icon||'';
+    document.getElementById('prod-inkoop').value=p.inkoop;
+    document.getElementById('prod-verkoop').value=p.verkoop;
+    _variants=p.varianten.map(v=>({...v}));
+  } else {
+    document.getElementById('prod-naam').value='';
+    document.getElementById('prod-icon').value='🧢';
+    document.getElementById('prod-inkoop').value='10.20';
+    document.getElementById('prod-verkoop').value='20.00';
+  }
+  renderVarRows();
+}
+
+function addVariant(){_variants.push({id:uid().slice(0,6),naam:'',kleur:'#888888'});renderVarRows();}
+
+function renderVarRows(){
+  document.getElementById('prod-variants-wrap').innerHTML=_variants.map((v,i)=>`
+    <div style="display:grid;grid-template-columns:1fr 80px 50px 28px;gap:6px;margin-bottom:6px;align-items:center">
+      <input class="form-input" placeholder="Naam" value="${v.naam}" oninput="_variants[${i}].naam=this.value" style="padding:8px">
+      <input type="color" value="${v.kleur||'#888888'}" oninput="_variants[${i}].kleur=this.value" style="width:100%;height:38px;border:1px solid var(--border);border-radius:2px;background:none;cursor:pointer">
+      <input class="form-input" placeholder="ID" value="${v.id}" oninput="_variants[${i}].id=this.value" style="padding:6px;font-size:10px">
+      <button class="btn-danger" style="padding:4px" onclick="_variants.splice(${i},1);renderVarRows()">✕</button>
+    </div>`).join('');
+}
+
+function editProduct(id){prepProduct(id);openModal('modal-product');}
+
+function saveProduct(){
+  const naam=document.getElementById('prod-naam').value.trim();
+  if(!naam){showToast('NAAM INVULLEN');return;}
+  const p={
+    naam,icon:document.getElementById('prod-icon').value.trim(),
+    inkoop:parseFloat(document.getElementById('prod-inkoop').value)||10.20,
+    verkoop:parseFloat(document.getElementById('prod-verkoop').value)||20,
+    varianten:[..._variants]
+  };
+  if(_editProdId){Object.assign(getProd(_editProdId),p);}
+  else{S.producten.push({id:uid(),...p});}
+  save();closeModal('modal-product');renderProducten();renderVoorraad();renderDashboard();
+  showToast('PRODUCT OPGESLAGEN');
+}
+
+function delProduct(id){
+  S.producten=S.producten.filter(p=>p.id!==id);
+  save();renderProducten();
+  showToast('PRODUCT VERWIJDERD');
+}
+
+// ════════════════════════════════
+// TOAST
+// ════════════════════════════════
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ════════════════════════════════
+// EXPORT / IMPORT BACKUP
+// ════════════════════════════════
+function exportData(){
+  const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const datum=new Date().toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'2-digit'}).replace(/\//g,'-');
+  a.href=url;a.download=`ksv-backup-${datum}.json`;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);URL.revokeObjectURL(url);
+  showToast('BACKUP GEDOWNLOAD');
+}
+
+function importData(){
+  document.getElementById('import-file-input').click();
+}
+function handleImport(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!data.producten||!data.verkoopOrders){showToast('ONGELDIG BESTAND');return;}
+      S=data;save();
+      renderDashboard();showToast('BACKUP GELADEN');
+    }catch(e){showToast('FOUT BIJ LADEN');}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ════════════════════════════════
+// INIT
+// ════════════════════════════════
+load();
+renderDashboard();
+</script>
+</body>
+</html>
