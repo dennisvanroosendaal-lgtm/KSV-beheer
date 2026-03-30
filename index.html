@@ -331,8 +331,12 @@
 <div class="content" id="tab-tickets">
   <div class="section-hdr">
     <div class="section-ttl">TICKETVERKOOP</div>
-    <button class="btn-sec" onclick="openModal('modal-ticket')" style="color:var(--accent);border-color:var(--accent)">+ TICKET</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn-sec" onclick="planHerinnering()" style="color:var(--blue);border-color:var(--blue)" title="Stel notificatie in">🔔</button>
+      <button class="btn-sec" onclick="openModal('modal-ticket')" style="color:var(--accent);border-color:var(--accent)">+ TICKET</button>
+    </div>
   </div>
+  <div id="notif-status" style="margin-bottom:12px"></div>
   <div id="ticket-list"></div>
   <div class="card" style="margin-top:12px">
     <div class="card-title">TOTAAL</div>
@@ -1745,6 +1749,146 @@ function renderConsumablesOverzicht(){
 }
 
 // ════════════════════════════════
+// BROWSER NOTIFICATIES
+// ════════════════════════════════
+function planHerinnering(){
+  if(!('Notification' in window)){
+    showToast('BROWSER ONDERSTEUNT GEEN NOTIFICATIES');return;
+  }
+  Notification.requestPermission().then(function(perm){
+    if(perm!=='granted'){
+      showToast('NOTIFICATIES GEBLOKKEERD — GEEF TOESTEMMING IN BROWSER');
+      return;
+    }
+    // Ask for date/time via simple prompt approach using modal
+    openNotifModal();
+  });
+}
+
+function sluitNotifModal(){var m=document.getElementById('notif-modal-tmp');if(m)m.remove();}
+
+function openNotifModal(){
+  // Get current saved reminders
+  var reminders=JSON.parse(localStorage.getItem('ksv_reminders')||'[]');
+
+  var modal=document.createElement('div');
+  modal.id='notif-modal-tmp';
+  modal.style='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;display:flex;align-items:flex-end';
+  modal.innerHTML='<div style="background:#181818;border-top:1px solid rgba(255,255,255,0.07);width:100%;padding:20px 16px 36px;border-radius:12px 12px 0 0;max-height:80vh;overflow-y:auto">'
+    +'<div style="font-family:var(--fd);font-size:20px;letter-spacing:3px;color:var(--accent);margin-bottom:16px">HERINNERING INSTELLEN</div>'
+    +'<div style="margin-bottom:12px">'
+    +'<label class="form-label">Wanneer wil je een herinnering?</label>'
+    +'<input class="form-input" type="datetime-local" id="notif-datetime" style="margin-bottom:8px">'
+    +'</div>'
+    +'<div style="margin-bottom:16px">'
+    +'<label class="form-label">Bericht</label>'
+    +'<input class="form-input" type="text" id="notif-msg" value="&#127915; Vergeet niet de ticketverkoop bij te werken!" placeholder="Herinnering tekst...">'
+    +'</div>'
+    +(reminders.length?'<div style="margin-bottom:16px"><div style="font-size:10px;letter-spacing:3px;color:rgba(245,240,232,0.35);margin-bottom:8px">GEPLANDE HERINNERINGEN</div>'
+      +reminders.map(function(r,i){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.07)">'
+          +'<div><div style="font-family:var(--fd);font-size:13px">'+new Date(r.time).toLocaleString("nl-NL")+'</div>'
+          +'<div style="font-size:10px;color:rgba(245,240,232,0.38)">'+r.msg+'</div></div>'
+          +'<button onclick="verwijderHerinnering('+i+')" class="btn-danger" style="font-size:11px;padding:4px 8px">✕</button>'
+          +'</div>';
+      }).join('')+'</div>':'')
+    +'<button class="btn-primary" onclick="slaHerinnering()">HERINNERING OPSLAAN</button>'
+    +'<button class="btn-sec" onclick="document.getElementById(\'notif-modal-tmp\').remove()" style="width:100%;margin-top:8px">ANNULEREN</button>'
+    +'</div>';
+  document.body.appendChild(modal);
+
+  // Set default to tomorrow 9:00
+  var tomorrow=new Date();
+  tomorrow.setDate(tomorrow.getDate()+1);
+  tomorrow.setHours(9,0,0,0);
+  var pad=function(n){return n.toString().padStart(2,'0');};
+  document.getElementById('notif-datetime').value=
+    tomorrow.getFullYear()+'-'+pad(tomorrow.getMonth()+1)+'-'+pad(tomorrow.getDate())
+    +'T'+pad(tomorrow.getHours())+':'+pad(tomorrow.getMinutes());
+}
+
+function slaHerinnering(){
+  var dtVal=document.getElementById('notif-datetime').value;
+  var msg=document.getElementById('notif-msg').value.trim()||'Ticketverkoop bijwerken!';
+  if(!dtVal){showToast('DATUM/TIJD KIEZEN');return;}
+
+  var dt=new Date(dtVal);
+  var now=new Date();
+  if(dt<=now){showToast('KIES EEN MOMENT IN DE TOEKOMST');return;}
+
+  var reminders=JSON.parse(localStorage.getItem('ksv_reminders')||'[]');
+  var delay=dt.getTime()-now.getTime();
+  var rid='r_'+Date.now();
+
+  reminders.push({id:rid,time:dt.getTime(),msg:msg});
+  localStorage.setItem('ksv_reminders',JSON.stringify(reminders));
+
+  // Plan de notificatie
+  setTimeout(function(){
+    new Notification('KSV Beheer',{
+      body:msg,
+      icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎟</text></svg>'
+    });
+    // Verwijder uit lijst na verzenden
+    var rem=JSON.parse(localStorage.getItem('ksv_reminders')||'[]');
+    rem=rem.filter(function(r){return r.id!==rid;});
+    localStorage.setItem('ksv_reminders',JSON.stringify(rem));
+    updateNotifStatus();
+  },delay);
+
+  document.getElementById('notif-modal-tmp').remove();
+  updateNotifStatus();
+  showToast('HERINNERING GEPLAND OP '+dt.toLocaleString('nl-NL'));
+}
+
+function verwijderHerinnering(idx){
+  var reminders=JSON.parse(localStorage.getItem('ksv_reminders')||'[]');
+  reminders.splice(idx,1);
+  localStorage.setItem('ksv_reminders',JSON.stringify(reminders));
+  document.getElementById('notif-modal-tmp').remove();
+  openNotifModal();
+  updateNotifStatus();
+}
+
+function updateNotifStatus(){
+  var el=document.getElementById('notif-status');
+  if(!el)return;
+  var reminders=JSON.parse(localStorage.getItem('ksv_reminders')||'[]');
+  var future=reminders.filter(function(r){return r.time>Date.now();});
+  if(!future.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:2px;padding:8px 12px;font-size:10px;color:var(--blue);letter-spacing:1px">'
+    +'🔔 '+future.length+' herinnering(en) gepland &nbsp;·&nbsp; '
+    +future.map(function(r){return new Date(r.time).toLocaleString('nl-NL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}).join(', ')
+    +'</div>';
+}
+
+// Herstel timers na pagina herlaad
+function herstelHerinneringen(){
+  if(Notification.permission!=='granted')return;
+  var reminders=JSON.parse(localStorage.getItem('ksv_reminders')||'[]');
+  var nu=Date.now();
+  var actief=[];
+  reminders.forEach(function(r){
+    if(r.time<=nu){
+      // Gemist - toon direct
+      new Notification('KSV Beheer',{body:'(Gemist) '+r.msg});
+    } else {
+      var delay=r.time-nu;
+      setTimeout(function(){
+        new Notification('KSV Beheer',{body:r.msg});
+        var rem=JSON.parse(localStorage.getItem('ksv_reminders')||'[]');
+        rem=rem.filter(function(x){return x.id!==r.id;});
+        localStorage.setItem('ksv_reminders',JSON.stringify(rem));
+        updateNotifStatus();
+      },delay);
+      actief.push(r);
+    }
+  });
+  localStorage.setItem('ksv_reminders',JSON.stringify(actief));
+  updateNotifStatus();
+}
+
+// ════════════════════════════════
 // TOAST
 // ════════════════════════════════
 function showToast(msg){
@@ -1817,6 +1961,7 @@ function resetAlles(){
 // ════════════════════════════════
 load();
 renderDashboard();
+if('Notification' in window && Notification.permission==='granted')herstelHerinneringen();
 </script>
 </body>
 </html>
