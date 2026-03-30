@@ -548,7 +548,18 @@ let S = {
 };
 
 function save(){try{localStorage.setItem('ksv3',JSON.stringify(S));}catch(e){}}
-function load(){try{const r=localStorage.getItem('ksv3');if(r)S=JSON.parse(r);}catch(e){}}
+function load(){
+  try{
+    const r=localStorage.getItem('ksv3');
+    if(r){
+      S=JSON.parse(r);
+      if(!S.ticketVerkopen)S.ticketVerkopen=[];
+      if(!S.settings)S.settings={verzend:6.95};
+      S.producten.forEach(function(p){if(!p.type)p.type='merch';});
+      save();
+    }
+  }catch(e){}
+}
 
 // ════════════════════════════════
 // HELPERS
@@ -748,77 +759,140 @@ function renderOverzicht(){
   if(!el)return;
   let html='';
 
-  // Toon alle producttypes maar per type anders
   S.producten.forEach(function(prod){
-    const variants=(prod.varianten&&prod.varianten.length)?prod.varianten:[{id:null,naam:'Standaard',kleur:'#555'}];
-    const allOrders=S.verkoopOrders.filter(function(o){return o.prodId===prod.id;});
-    const betaald=allOrders.filter(function(o){return o.betaling==='betaald';});
-    const openO=allOrders.filter(function(o){return !o.gesloten&&o.betaling!=='betaald';});
+    var prodType=getProdType(prod);
+    var variants=(prod.varianten&&prod.varianten.length)?prod.varianten:[{id:null,naam:'Standaard',kleur:'#555'}];
 
-    const totVerkocht=betaald.reduce(function(s,o){return s+(o.aantal||1);},0);
-    const totOmzet=betaald.reduce(function(s,o){return s+(o.aantal||1)*(o.prijs||prod.verkoop);},0);
-    const totInkoop=betaald.reduce(function(s,o){return s+(o.aantal||1)*prod.inkoop;},0);
-    const totWinst=totOmzet-totInkoop;
-    const totOpen=openO.reduce(function(s,o){return s+(o.aantal||1);},0);
+    // Inkoop totalen
+    var totInkoopBesteld=0;
+    var inkoopOntvangen=0;
+    S.inkoopOrders.forEach(function(o){
+      (o.items||[]).forEach(function(i){
+        if(i.prodId===prod.id){
+          totInkoopBesteld+=i.aantal*(i.inkoop||prod.inkoop);
+          if(o.ontvangen)inkoopOntvangen+=i.aantal*(i.inkoop||prod.inkoop);
+        }
+      });
+    });
+
+    // Verkoop totalen (alleen merch)
+    var betaaldOrders=S.verkoopOrders.filter(function(o){return o.prodId===prod.id&&o.betaling==='betaald';});
+    var openOrders=S.verkoopOrders.filter(function(o){return o.prodId===prod.id&&!o.gesloten&&o.betaling!=='betaald';});
+    var totVerkocht=betaaldOrders.reduce(function(s,o){return s+(o.aantal||1);},0);
+    var totOmzet=betaaldOrders.reduce(function(s,o){return s+(o.aantal||1)*(o.prijs!=null?o.prijs:prod.verkoop);},0);
+    var totInkoopVerkocht=betaaldOrders.reduce(function(s,o){return s+(o.aantal||1)*prod.inkoop;},0);
+    var totWinst=totOmzet-totInkoopVerkocht;
+    var totOpen=openOrders.reduce(function(s,o){return s+(o.aantal||1);},0);
+
+    // Stock totaal
+    var totStock=0;
+    variants.forEach(function(v){totStock+=getStock(prod.id,v.id);});
 
     html+='<div class="card">';
-    html+='<div class="card-title">'+(prod.icon||'')+ ' '+prod.naam+'</div>';
-    html+='<div class="stat-row"><span class="stat-label">Verkocht (betaald)</span><span class="stat-value accent">'+totVerkocht+' stuks</span></div>';
-    html+='<div class="stat-row"><span class="stat-label">Omzet ontvangen</span><span class="stat-value green">'+fmt(totOmzet)+'</span></div>';
-    html+='<div class="stat-row"><span class="stat-label">Inkoopkosten</span><span class="stat-value red">-'+fmt(totInkoop)+'</span></div>';
-    html+='<div class="stat-row"><span class="stat-label">Winst</span><span class="stat-value '+(totWinst>=0?'green':'red')+'">'+fmt(totWinst)+'</span></div>';
-    if(totOpen>0){html+='<div class="stat-row"><span class="stat-label">Open / onbetaald</span><span class="stat-value orange">'+totOpen+' stuks</span></div>';}
 
-    // Per variant
-    html+='<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.07);padding-top:10px">';
-    html+='<div style="font-size:10px;letter-spacing:3px;color:rgba(245,240,232,0.3);margin-bottom:8px">PER VARIANT</div>';
-    variants.forEach(function(v){
-      const vBetaald=betaald.filter(function(o){return o.variantId===v.id;});
-      const vOpen=openO.filter(function(o){return o.variantId===v.id;});
-      const vVerkocht=vBetaald.reduce(function(s,o){return s+(o.aantal||1);},0);
-      const vOmzet=vBetaald.reduce(function(s,o){return s+(o.aantal||1)*(o.prijs||prod.verkoop);},0);
-      const vWinst=vOmzet-vBetaald.reduce(function(s,o){return s+(o.aantal||1)*prod.inkoop;},0);
-      const vOpenAantal=vOpen.reduce(function(s,o){return s+(o.aantal||1);},0);
-      const vStock=getStock(prod.id,v.id);
-      const kleurDot=v.kleur?'<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:'+v.kleur+';margin-right:6px;vertical-align:middle"></span>':'';
-
-      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">';
-      html+='<div>'+kleurDot+'<span style="font-family:var(--fd);font-size:15px">'+v.naam+'</span>';
-      html+='<div style="font-size:10px;color:rgba(245,240,232,0.38);margin-top:2px">'+vVerkocht+' verkocht &nbsp;&middot;&nbsp; '+vStock+' in stock'+(vOpenAantal>0?' &nbsp;&middot;&nbsp; <span style="color:var(--orange)">'+vOpenAantal+' open</span>':'')+'</div></div>';
-      html+='<div style="text-align:right">';
-      html+='<div style="font-family:var(--fd);font-size:18px;color:'+(vWinst>=0?'var(--green)':'var(--red)')+'">'+fmt(vWinst)+'</div>';
-      html+='<div style="font-size:10px;color:rgba(245,240,232,0.38)">'+fmt(vOmzet)+' omzet</div>';
-      html+='</div></div>';
-    });
+    // Header met type badge
+    var typeBadge=prodType==='service'?'⚙️ SERVICE':prodType==='consumable'?'🍺 CONSUMABLE':'🧢 MERCHANDISE';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+    html+='<div class="card-title" style="margin-bottom:0">'+(prod.icon||'')+ ' '+prod.naam+'</div>';
+    html+='<span class="tag tag-accent" style="font-size:10px">'+typeBadge+'</span>';
     html+='</div>';
 
-    // Orders list
-    if(allOrders.length){
+    // Per type andere info
+    if(prodType==='merch'){
+      html+='<div class="stat-row"><span class="stat-label">In stock</span><span class="stat-value accent">'+totStock+'</span></div>';
+      html+='<div class="stat-row"><span class="stat-label">Ingekocht (waarde)</span><span class="stat-value">'+fmt(inkoopOntvangen)+'</span></div>';
+      html+='<div class="stat-row"><span class="stat-label">Verkocht (betaald)</span><span class="stat-value">'+totVerkocht+' stuks</span></div>';
+      html+='<div class="stat-row"><span class="stat-label">Omzet ontvangen</span><span class="stat-value green">'+fmt(totOmzet)+'</span></div>';
+      html+='<div class="stat-row"><span class="stat-label">Inkoopkosten verkocht</span><span class="stat-value red">-'+fmt(totInkoopVerkocht)+'</span></div>';
+      html+='<div class="stat-row"><span class="stat-label">Winst</span><span class="stat-value '+(totWinst>=0?'green':'red')+'">'+fmt(totWinst)+'</span></div>';
+      if(totOpen>0)html+='<div class="stat-row"><span class="stat-label">Open / onbetaald</span><span class="stat-value orange">'+totOpen+' stuks</span></div>';
+
+    } else if(prodType==='consumable'){
+      var totVerbruikt=0,totRetour=0;
+      variants.forEach(function(v){
+        var vb=getVerbruikt(prod.id,v.id);
+        var st=getStock(prod.id,v.id);
+        totVerbruikt+=vb;
+        totRetour+=Math.max(0,st-vb);
+      });
+      var kostenVerbruikt=totVerbruikt*prod.inkoop;
+      html+='<div class="stat-row"><span class="stat-label">In stock</span><span class="stat-value accent">'+totStock+'</span></div>';
+      html+='<div class="stat-row"><span class="stat-label">Ingekocht (waarde)</span><span class="stat-value">'+fmt(inkoopOntvangen)+'</span></div>';
+      html+='<div class="stat-row"><span class="stat-label">Verbruikt</span><span class="stat-value orange">'+totVerbruikt+' stuks</span></div>';
+      html+='<div class="stat-row"><span class="stat-label">Retour</span><span class="stat-value green">'+totRetour+' stuks</span></div>';
+      html+='<div class="stat-row"><span class="stat-label">Kosten verbruikt</span><span class="stat-value red">-'+fmt(kostenVerbruikt)+'</span></div>';
+
+    } else if(prodType==='service'){
+      html+='<div class="stat-row"><span class="stat-label">Besteld (incl. ontvangen)</span><span class="stat-value">'+fmt(totInkoopBesteld)+'</span></div>';
+      html+='<div class="stat-row"><span class="stat-label">Kosten betaald</span><span class="stat-value red">-'+fmt(inkoopOntvangen)+'</span></div>';
+    }
+
+    // Per variant (alleen merch en consumable)
+    if(prodType!=='service'&&variants.length>1){
       html+='<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.07);padding-top:10px">';
-      html+='<div style="font-size:10px;letter-spacing:3px;color:rgba(245,240,232,0.3);margin-bottom:8px">ORDERS ('+allOrders.length+')</div>';
-      allOrders.slice().reverse().forEach(function(o){
-        var v2=getVar(prod,o.variantId);
-        var betalingOk=o.betaling==='betaald';
-        var statusLbl=STATUS_LBL[o.status]||o.status;
-        var statusCls=STATUS_TAG[o.status]||'';
+      html+='<div style="font-size:10px;letter-spacing:3px;color:rgba(245,240,232,0.3);margin-bottom:8px">PER VARIANT</div>';
+      variants.forEach(function(v){
+        var vStock=getStock(prod.id,v.id);
+        var vVerbruikt=isConsumable(prod)?getVerbruikt(prod.id,v.id):0;
+        var vBetaald=betaaldOrders.filter(function(o){return o.variantId===v.id;});
+        var vVerkocht=vBetaald.reduce(function(s,o){return s+(o.aantal||1);},0);
+        var vOmzet=vBetaald.reduce(function(s,o){return s+(o.aantal||1)*(o.prijs!=null?o.prijs:prod.verkoop);},0);
+        var vWinst=vOmzet-vBetaald.reduce(function(s,o){return s+(o.aantal||1)*prod.inkoop;},0);
+        var kleurDot=v.kleur?'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+v.kleur+';margin-right:5px;vertical-align:middle"></span>':'';
+
         html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04)">';
-        html+='<div>';
-        html+='<div style="font-family:var(--fd);font-size:14px">'+o.naam+'</div>';
-        html+='<div style="font-size:10px;color:rgba(245,240,232,0.38)">'+(v2?v2.naam+' &middot; ':'')+o.datum+' &middot; '+(o.aantal||1)+'x &middot; '+fmt((o.aantal||1)*(o.prijs||prod.verkoop))+'</div>';
+        html+='<div>'+kleurDot+'<span style="font-family:var(--fd);font-size:14px">'+v.naam+'</span>';
+        if(prodType==='merch'){
+          html+='<div style="font-size:10px;color:rgba(245,240,232,0.38)">'+vStock+' stock &nbsp;&middot;&nbsp; '+vVerkocht+' verkocht</div>';
+        } else {
+          html+='<div style="font-size:10px;color:rgba(245,240,232,0.38)">'+vStock+' stock &nbsp;&middot;&nbsp; '+vVerbruikt+' verbruikt &nbsp;&middot;&nbsp; '+Math.max(0,vStock-vVerbruikt)+' retour</div>';
+        }
         html+='</div>';
-        html+='<div style="display:flex;gap:4px;flex-shrink:0">';
-        html+='<span class="tag '+statusCls+'" style="font-size:10px">'+statusLbl+'</span>';
-        html+='<span class="tag '+(betalingOk?'tag-green':'tag-orange')+'" style="font-size:10px">'+(betalingOk?'&#128176;':'&#9203;')+'</span>';
-        html+='<span class="tag '+(o.gesloten?'tag-green':'tag-orange')+'" style="font-size:10px">'+(o.gesloten?'&#9989;':'&#128336;')+'</span>';
-        html+='</div></div>';
+        if(prodType==='merch'){
+          html+='<div style="text-align:right"><div style="font-family:var(--fd);font-size:16px;color:'+(vWinst>=0?'var(--green)':'var(--red)')+'">'+fmt(vWinst)+'</div>';
+          html+='<div style="font-size:10px;color:rgba(245,240,232,0.38)">'+fmt(vOmzet)+' omzet</div></div>';
+        }
+        html+='</div>';
       });
       html+='</div>';
-    } else {
-      html+='<div class="empty" style="padding:12px">Nog geen orders voor dit product</div>';
+    }
+
+    // Orders (alleen merch)
+    if(prodType==='merch'){
+      var allOrders=S.verkoopOrders.filter(function(o){return o.prodId===prod.id;});
+      if(allOrders.length){
+        html+='<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.07);padding-top:10px">';
+        html+='<div style="font-size:10px;letter-spacing:3px;color:rgba(245,240,232,0.3);margin-bottom:8px">ORDERS ('+allOrders.length+')</div>';
+        allOrders.slice().reverse().forEach(function(o){
+          var v2=getVar(prod,o.variantId);
+          var betalingOk=o.betaling==='betaald';
+          html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04)">';
+          html+='<div><div style="font-family:var(--fd);font-size:13px">'+o.naam+'</div>';
+          html+='<div style="font-size:10px;color:rgba(245,240,232,0.38)">'+(v2?v2.naam+' &middot; ':'')+o.datum+' &middot; '+(o.aantal||1)+'x &middot; '+fmt((o.aantal||1)*(o.prijs!=null?o.prijs:prod.verkoop))+'</div></div>';
+          html+='<span class="tag '+(betalingOk?'tag-green':'tag-orange')+'" style="font-size:10px">'+(betalingOk?'&#128176;':'&#9203;')+'</span>';
+          html+='</div>';
+        });
+        html+='</div>';
+      }
     }
 
     html+='</div>';
   });
+
+  // Tickets overzicht onderaan
+  if(S.ticketVerkopen&&S.ticketVerkopen.length){
+    html+='<div class="card">';
+    html+='<div class="card-title">🎟 TICKETVERKOOP</div>';
+    var tickBetaald=S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';});
+    var tickOmzet=tickBetaald.reduce(function(s,t){return s+t.aantal*t.prijs;},0);
+    html+='<div class="stat-row"><span class="stat-label">Totale omzet tickets</span><span class="stat-value green">'+fmt(tickOmzet)+'</span></div>';
+    S.ticketVerkopen.forEach(function(t){
+      var ok=t.betaling==='betaald';
+      html+='<div class="stat-row"><span class="stat-label">'+t.type+' ('+t.aantal+'x '+fmt(t.prijs)+')</span>';
+      html+='<span class="stat-value '+(ok?'green':'orange')+'">'+fmt(t.aantal*t.prijs)+'</span></div>';
+    });
+    html+='</div>';
+  }
 
   el.innerHTML=html||'<div class="empty">Geen producten gevonden</div>';
 }
