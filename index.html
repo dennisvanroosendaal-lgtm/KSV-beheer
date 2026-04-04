@@ -458,6 +458,8 @@
   <div class="card" style="margin-top:12px">
     <div class="card-title">TOTAAL</div>
     <div class="stat-row"><span class="stat-label">Omzet betaald</span><span class="stat-value green" id="tick-omzet">€0</span></div>
+    <div class="stat-row"><span class="stat-label">Tickable kosten</span><span class="stat-value red" id="tick-inkoop-totaal">€0</span></div>
+    <div class="stat-row"><span class="stat-label">Netto opbrengst</span><span class="stat-value green" id="tick-netto">€0</span></div>
     <div class="stat-row"><span class="stat-label">Totaal tickets verkocht</span><span class="stat-value accent" id="tick-totaal-aantal">0</span></div>
     <div class="stat-row"><span class="stat-label">Verwacht (onbetaald)</span><span class="stat-value orange" id="tick-verwacht">€0</span></div>
   </div>
@@ -565,8 +567,12 @@
       <input class="form-input" type="number" id="tick-aantal-inp" value="1" min="1">
     </div>
     <div class="form-group">
-      <label class="form-label">Prijs per ticket (€)</label>
-      <input class="form-input" type="number" step="0.01" id="tick-prijs" value="0.00">
+      <label class="form-label">Verkoopprijs per ticket (€)</label>
+      <input class="form-input" type="number" step="0.01" id="tick-prijs" value="40.00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Inkoopkosten per ticket (€) — bijv. Tickable 0,32</label>
+      <input class="form-input" type="number" step="0.01" id="tick-inkoop" value="0.32">
     </div>
     <div class="form-group">
       <label class="form-label">Betaalstatus</label>
@@ -576,8 +582,12 @@
       </div>
     </div>
     <div class="form-group">
+      <label class="form-label">Verkoopdatum</label>
+      <input class="form-input" type="date" id="tick-datum-input" value="">
+    </div>
+    <div class="form-group">
       <label class="form-label">Notitie (optioneel)</label>
-      <input class="form-input" type="text" id="tick-notitie" placeholder="Bijv. datum, kanaal...">
+      <input class="form-input" type="text" id="tick-notitie" placeholder="Bijv. kanaal, naam...">
     </div>
     <input type="hidden" id="tick-edit-id">
     <button class="btn-primary" onclick="saveTicket()">OPSLAAN</button>
@@ -808,7 +818,9 @@ function renderDashboard(){
       omzetMerch+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?.verkoop||0));
     });
   });
-  (S.ticketVerkopen||[]).filter(t=>t.betaling==='betaald').forEach(t=>omzetTicket+=t.aantal*t.prijs);
+  (S.ticketVerkopen||[]).filter(t=>t.betaling==='betaald').forEach(t=>{
+    omzetTicket+=t.aantal*t.prijs;
+  });
   S.verkoopOrders.filter(o=>!o.gesloten&&o.betaling!=='betaald').forEach(o=>{
     getOrderItems(o).forEach(function(i){
       omzetVerwacht+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?.verkoop||0));
@@ -1597,7 +1609,7 @@ function renderFinancieel(){
   const totaalOmzet=omzetMerch+omzetTicket;
 
   // INKOOPKOSTEN per categorie - per item berekend (mixed orders correct)
-  let inkoopMerch=0,inkoopCons=0,inkoopServ=0;
+  let inkoopMerch=0,inkoopCons=0,inkoopServ=0,inkoopTicket=0;
   S.inkoopOrders.filter(o=>o.betaling==='betaald').forEach(o=>{
     (o.items||[]).forEach(i=>{
       const prod=getProd(i.prodId);
@@ -2124,7 +2136,9 @@ function prepTicket(id=null){
     if(t){
       document.getElementById('tick-type').value=t.type||'';
       document.getElementById('tick-aantal-inp').value=t.aantal||1;
-      document.getElementById('tick-prijs').value=t.prijs||0;
+      document.getElementById('tick-prijs').value=(t.prijs||40).toFixed(2);
+      document.getElementById('tick-inkoop').value=(t.inkoop||0.32).toFixed(2);
+      document.getElementById('tick-datum-input').value=t.datum||today();
       document.getElementById('tick-notitie').value=t.notitie||'';
       _sel['tick-betaling']=t.betaling;
       document.querySelectorAll('#modal-ticket .sel-btn').forEach(b=>{
@@ -2134,7 +2148,9 @@ function prepTicket(id=null){
   } else {
     document.getElementById('tick-type').value='';
     document.getElementById('tick-aantal-inp').value=1;
-    document.getElementById('tick-prijs').value=0;
+    document.getElementById('tick-prijs').value='40.00';
+    document.getElementById('tick-inkoop').value='0.32';
+    document.getElementById('tick-datum-input').value=today();
     document.getElementById('tick-notitie').value='';
   }
 }
@@ -2150,11 +2166,13 @@ function saveTicket(){
   if(!tickType){showToast('TICKETTYPE INVULLEN');return;}
   if(!betaling){showToast('BETALING KIEZEN');return;}
 
+  const inkoop=parseFloat(document.getElementById('tick-inkoop').value)||0;
+  const tickDatum=document.getElementById('tick-datum-input').value||today();
   if(editId){
     const t=(S.ticketVerkopen||[]).find(x=>x.id===editId);
-    if(t){t.type=tickType;t.aantal=aantal;t.prijs=prijs;t.betaling=betaling;t.notitie=notitie;}
+    if(t){t.type=tickType;t.aantal=aantal;t.prijs=prijs;t.inkoop=inkoop;t.betaling=betaling;t.notitie=notitie;t.datum=tickDatum;}
   } else {
-    (S.ticketVerkopen||[]).push({id:uid(),type:tickType,aantal,prijs,betaling,notitie,datum:today()});
+    (S.ticketVerkopen||[]).push({id:uid(),type:tickType,aantal,prijs,inkoop,betaling,notitie,datum:tickDatum});
   }
   save();closeModal('modal-ticket');renderTickets();renderFinancieel();renderDashboard();
   showToast('TICKET OPGESLAGEN');
@@ -2168,6 +2186,8 @@ function renderTickets(){
   } else {
     list.innerHTML=(S.ticketVerkopen||[]).slice().reverse().map(t=>{
       const omzet=t.aantal*t.prijs;
+      const inkoopKosten=t.aantal*(t.inkoop||0);
+      const netto=omzet-inkoopKosten;
       const betalingOk=t.betaling==='betaald';
       return '<div class="order-card s-'+(betalingOk?'verzonden':'nieuw')+'" data-tid="'+t.id+'">'
         +'<div class="order-head"><div class="order-name">&#127915; '+t.type+'</div><div class="order-date">'+t.datum+'</div></div>'
@@ -2190,14 +2210,20 @@ function renderTickets(){
 
   // Totals
   const betaald=(S.ticketVerkopen||[]).filter(t=>t.betaling==='betaald').reduce((s,t)=>s+t.aantal*t.prijs,0);
+  const tickInkoop=(S.ticketVerkopen||[]).filter(t=>t.betaling==='betaald').reduce((s,t)=>s+t.aantal*(t.inkoop||0),0);
+  const netto=betaald-tickInkoop;
   const verwacht=(S.ticketVerkopen||[]).filter(t=>t.betaling!=='betaald').reduce((s,t)=>s+t.aantal*t.prijs,0);
   const totAantal=(S.ticketVerkopen||[]).reduce((s,t)=>s+t.aantal,0);
   const el1=document.getElementById('tick-omzet');
   const el2=document.getElementById('tick-totaal-aantal');
   const el3=document.getElementById('tick-verwacht');
+  const el4=document.getElementById('tick-inkoop-totaal');
+  const el5=document.getElementById('tick-netto');
   if(el1)el1.textContent=fmt(betaald);
   if(el2)el2.textContent=totAantal;
   if(el3)el3.textContent=fmt(verwacht);
+  if(el4)el4.textContent='-'+fmt(tickInkoop);
+  if(el5)el5.textContent=fmt(netto);
 }
 
 function ticketActie(btn,actie){
@@ -2490,6 +2516,12 @@ function exportCSV(){
   });
   rows.push(['','','','']);
 
+  // TICKABLE TRANSACTIEKOSTEN
+  (S.ticketVerkopen||[]).filter(t=>t.betaling==='betaald').forEach(t=>{
+    inkoopTicket+=t.aantal*(t.inkoop||0);
+  });
+  inkoopServ+=inkoopTicket;
+
   // RETOUR CONSUMABLES
   rows.push(['RETOUR CONSUMABLES','','','']);
   S.producten.filter(function(p){return isConsumable(p);}).forEach(function(p){
@@ -2617,4 +2649,4 @@ renderDashboard();
 if('Notification' in window && Notification.permission==='granted')herstelHerinneringen();
 </script>
 </body>
-  </html>
+</html>
