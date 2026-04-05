@@ -404,6 +404,13 @@
     </div>
     <div class="divider"></div>
     <div class="form-group">
+      <label class="form-label">Backup</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="btn-sec" onclick="exportData()" style="flex:1;color:var(--green);border-color:var(--green)">💾 DOWNLOAD BACKUP</button>
+        <button class="btn-sec" onclick="importData()" style="flex:1;color:var(--blue);border-color:var(--blue)">📂 LAAD BACKUP</button>
+      </div>
+    </div>
+    <div class="form-group">
       <label class="form-label">Gevaarlijke zone</label>
       <input class="form-input" type="text" id="reset-bevestig" placeholder="Type WISSEN om te bevestigen..." style="margin-bottom:8px">
       <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;letter-spacing:2px" onclick="resetAlles()">🗑 ALLES WISSEN</button>
@@ -665,7 +672,12 @@ function syncLaden(){
   _syncing=true;
   updateSyncStatus('laden');
   fetch('https://api.jsonbin.io/v3/b/'+KSV_BIN_ID+'/latest',{
-    headers:{'X-Master-Key':KSV_API_KEY}
+    method:'GET',
+    mode:'cors',
+    headers:{
+      'X-Master-Key':KSV_API_KEY,
+      'X-Bin-Meta':false
+    }
   })
   .then(function(res){
     if(!res.ok)throw new Error('HTTP '+res.status);
@@ -673,20 +685,28 @@ function syncLaden(){
   })
   .then(function(data){
     if(data.record&&data.record.producten){
-      S=data.record;
-      if(!S.ticketVerkopen)S.ticketVerkopen=[];
-      if(!S.settings)S.settings={verzend:6.95};
-      S.producten.forEach(function(p){if(!p.type)p.type='merch';if(!p.minStock)p.minStock=2;});
-      localStorage.setItem('ksv3',JSON.stringify(S));
-      renderDashboard();
+      var cloud=data.record;
+      // Veiligheidscheck: tel datapunten in cloud vs lokaal
+      var cloudPunten=(cloud.verkoopOrders||[]).length+(cloud.inkoopOrders||[]).length+(cloud.ticketVerkopen||[]).length+(cloud.producten||[]).length;
+      var lokalePunten=(S.verkoopOrders||[]).length+(S.inkoopOrders||[]).length+(S.ticketVerkopen||[]).length+(S.producten||[]).length;
+      // Overschrijf lokaal alleen als cloud meer data heeft of lokaal leeg is
+      if(cloudPunten>=lokalePunten||lokalePunten<=1){
+        S=cloud;
+        if(!S.ticketVerkopen)S.ticketVerkopen=[];
+        if(!S.settings)S.settings={verzend:6.95};
+        S.producten.forEach(function(p){if(!p.type)p.type='merch';if(!p.minStock)p.minStock=2;});
+        localStorage.setItem('ksv3',JSON.stringify(S));
+        renderDashboard();
+      }
     }
     updateSyncStatus('ok');
     _syncing=false;
   })
   .catch(function(err){
-    console.warn('syncLaden fout:',err.message);
+    console.warn('syncLaden fout:',err.message,err);
     updateSyncStatus('fout');
     _syncing=false;
+    // Stille fout - app werkt gewoon door met lokale data
   });
 }
 
@@ -699,6 +719,7 @@ function syncOpslaan(){
     updateSyncStatus('opslaan');
     fetch('https://api.jsonbin.io/v3/b/'+KSV_BIN_ID,{
       method:'PUT',
+      mode:'cors',
       headers:{
         'Content-Type':'application/json',
         'X-Master-Key':KSV_API_KEY
@@ -2021,6 +2042,33 @@ function exportCSV(){
 }// ════════════════════════════════════════════════════
 // RESET
 // ════════════════════════════════════════════════════
+function exportData(){
+  var blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='ksv-backup-'+today()+'.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  showToast('BACKUP GEDOWNLOAD');
+}
+function importData(){
+  var inp=document.createElement('input');
+  inp.type='file';inp.accept='.json';
+  inp.onchange=function(){
+    var file=inp.files[0];if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      try{
+        var data=JSON.parse(ev.target.result);
+        if(!data.producten||!data.verkoopOrders){showToast('ONGELDIG BESTAND');return;}
+        S=data;save();renderDashboard();showToast('BACKUP GELADEN');
+      }catch(ex){showToast('FOUT BIJ LADEN');}
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
 function resetAlles(){
   var inp=document.getElementById('reset-bevestig');
   if(!inp||inp.value.trim()!=='WISSEN'){showToast('TYPE WISSEN TER BEVESTIGING');return;}
