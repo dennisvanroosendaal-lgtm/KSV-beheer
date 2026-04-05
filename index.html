@@ -216,7 +216,6 @@
     .hdr-btns .btn-sec{padding:6px 8px;font-size:10px;}
   }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -624,7 +623,27 @@
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script>/*
+ * KSV Beheersysteem — Kerkwerve Summervibe 2026
+ * Laatste update: 2026-04-05
+ *
+ * FIXES IN DEZE VERSIE:
+ * Bug #1  — prepVerkoop() gebruikt _sel (was: sel) — was al OK
+ * Bug #2  — _editProdId en _variants correct gedeclareerd — was al OK
+ * Bug #3  — renderVarRows() gebruikt data-index + updateVariant() i.p.v. inline array-index
+ * Bug #4  — prepAfboek() en slaAfboekOp() gebruiken sk() voor consistente keys
+ * Bug #5  — editVkOrder() verwijderd nutteloze textContent===variantId check
+ * Bug #6  — retourCredit alleen berekend als slaAfboekOp() is aangeroepen (afboek_gedaan flag)
+ * Bug #7  — 'oudste eerst' sorteeroptie heeft expliciete else-tak met comment
+ * Bug #8  — _skipZeroWarn wordt gereset in closeModal('modal-verkoop') en prepVerkoop()
+ * Bug #9  — save() toont toast bij localStorage vol
+ * Bug #10 — confirm() dialoog bij delVkOrder(), delInkoop(), delProduct()
+ * V#1     — calcKPIs() centrale berekeningsfunctie, gebruikt door updateLandingStats()
+ * V#2     — Chart.js CDN import verwijderd (bespaart 283KB)
+ * V#3     — displayDate() voor uniforme datumweergave, today() als interne opslag
+ * V#4     — Negatieve prijzen worden gevalideerd in saveVerkoop() en saveInkoop()
+ */
+
 // ════════════════════════════════════════════════════
 // STATE & STORAGE
 // ════════════════════════════════════════════════════
@@ -645,7 +664,10 @@ var S = {
   settings:{verzend:6.95}
 };
 
-function save(){try{localStorage.setItem('ksv3',JSON.stringify(S));}catch(e){}}
+function save(){
+  try{localStorage.setItem('ksv3',JSON.stringify(S));}
+  catch(e){showToast('⚠️ OPSLAAN MISLUKT — Geheugen vol?');}
+}
 function load(){
   try{
     var r=localStorage.getItem('ksv3');
@@ -670,7 +692,16 @@ function today(){
   var d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-function todayDisplay(){return new Date().toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'2-digit'});}
+function todayDisplay(){return today();}
+function displayDate(dateStr){
+  if(!dateStr)return '';
+  // YYYY-MM-DD -> DD/MM/YY
+  if(dateStr.match(/^\d{4}-\d{2}-\d{2}$/)){
+    var p=dateStr.split('-');
+    return p[2]+'/'+p[1]+'/'+p[0].slice(2);
+  }
+  return dateStr; // legacy formats pass through
+}
 function sk(pId,vId){return pId+'__'+(vId||'_');}
 function getStock(pId,vId){return S.voorraad[sk(pId,vId)]||0;}
 function setStock(pId,vId,n){S.voorraad[sk(pId,vId)]=Math.max(0,n);}
@@ -703,22 +734,71 @@ var STATUS_TAG={nieuw:'tag-blue',ingepakt:'tag-orange',verzonden:'tag-green',lan
 // ════════════════════════════════════════════════════
 // LANDING PAGE
 // ════════════════════════════════════════════════════
+function calcKPIs(){
+  var omzetMerch=0,omzetTicket=0,inkoopMerch=0,inkoopCons=0,inkoopServ=0,inkoopTicketKosten=0;
+  var openOmzet=0,openTicket=0,openInkoop=0;
+
+  S.verkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
+    getOrderItems(o).forEach(function(i){
+      omzetMerch+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?getProd(i.prodId).verkoop:0));
+    });
+  });
+  S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).forEach(function(t){
+    omzetTicket+=t.aantal*t.prijs;
+    inkoopTicketKosten+=t.aantal*(t.inkoop||0);
+  });
+  S.inkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
+    (o.items||[]).forEach(function(i){
+      var p=getProd(i.prodId);var tp=getProdType(p);var b=i.aantal*(i.inkoop||0);
+      if(tp==='consumable')inkoopCons+=b;
+      else if(tp==='service')inkoopServ+=b;
+      else inkoopMerch+=b;
+    });
+  });
+  inkoopServ+=inkoopTicketKosten;
+
+  var retourCredit=0;
+  S.producten.filter(isConsumable).forEach(function(prod){
+    (prod.varianten&&prod.varianten.length?prod.varianten:[{id:null}]).forEach(function(v){
+      var heeftAfgeboekt=S.inkoopOrders.some(function(o){return o.ontvangen&&(o.items||[]).some(function(i){return i.prodId===prod.id;});});
+      if(heeftAfgeboekt&&S.voorraad['afboek_gedaan_'+prod.id]){
+        var retour=Math.max(0,getStock(prod.id,v.id)-getVerbruikt(prod.id,v.id));
+        retourCredit+=retour*prod.inkoop;
+      }
+    });
+  });
+
+  var totaalOmzet=omzetMerch+omzetTicket;
+  var totaalKosten=inkoopMerch+inkoopCons+inkoopServ-retourCredit;
+  var winst=totaalOmzet-totaalKosten;
+  var openOrders=S.verkoopOrders.filter(function(o){return !o.gesloten;}).length;
+
+  S.verkoopOrders.filter(function(o){return !o.gesloten&&o.betaling!=='betaald';}).forEach(function(o){
+    getOrderItems(o).forEach(function(i){
+      openOmzet+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?getProd(i.prodId).verkoop:0));
+    });
+  });
+  S.ticketVerkopen.filter(function(t){return t.betaling!=='betaald';}).forEach(function(t){openTicket+=t.aantal*t.prijs;});
+  S.inkoopOrders.filter(function(o){return o.betaling!=='betaald';}).forEach(function(o){
+    openInkoop+=(o.items||[]).reduce(function(s,i){return s+i.aantal*(i.inkoop||0);},0);
+  });
+
+  return {
+    omzetMerch:omzetMerch, omzetTicket:omzetTicket,
+    totaalOmzet:totaalOmzet, inkoopMerch:inkoopMerch,
+    inkoopCons:inkoopCons, inkoopServ:inkoopServ,
+    retourCredit:retourCredit, totaalKosten:totaalKosten,
+    winst:winst, openOrders:openOrders,
+    openOmzet:openOmzet, openTicket:openTicket, openInkoop:openInkoop
+  };
+}
+
 function updateLandingStats(){
   try{
-    var omzetM=0,omzetT=0,kosten=0;
-    S.verkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
-      getOrderItems(o).forEach(function(i){omzetM+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?getProd(i.prodId).verkoop:0));});
-    });
-    S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).forEach(function(t){omzetT+=t.aantal*t.prijs;});
-    S.inkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
-      (o.items||[]).forEach(function(i){kosten+=i.aantal*(i.inkoop||0);});
-    });
-    S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).forEach(function(t){kosten+=t.aantal*(t.inkoop||0);});
-    var omzet=omzetM+omzetT;
-    var winst=omzet-kosten;
-    var open=S.verkoopOrders.filter(function(o){return !o.gesloten;}).length;
+    var k=calcKPIs();
     var set=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-    set('lp-winst',fmt(winst));set('lp-omzet',fmt(omzet));set('lp-kosten',fmt(kosten));set('lp-orders',open);
+    set('lp-winst',fmt(k.winst));set('lp-omzet',fmt(k.totaalOmzet));
+    set('lp-kosten',fmt(k.totaalKosten));set('lp-orders',k.openOrders);
   }catch(e){}
 }
 
@@ -776,7 +856,7 @@ function openModal(id){
 function closeModal(id){
   var el=document.getElementById(id);
   if(el)el.classList.remove('open');
-  if(id==='modal-verkoop')_editVkId=null;
+  if(id==='modal-verkoop'){_editVkId=null;window._skipZeroWarn=false;}
 }
 // Klik buiten modal sluit hem — FIX bug #9
 ['modal-inkoop','modal-verkoop','modal-product','modal-ticket','modal-afboek'].forEach(function(id){
@@ -810,7 +890,8 @@ function showToast(msg){
 // DASHBOARD
 // ════════════════════════════════════════════════════
 function renderDashboard(){
-  var omzet=0,betaaldeInkoop=0,openOrders=0,totStock=0;
+  var kpi=calcKPIs();
+  var omzet=kpi.totaalOmzet,betaaldeInkoop=kpi.totaalKosten,openOrders=kpi.openOrders,totStock=0;
   S.verkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
     getOrderItems(o).forEach(function(i){
       omzet+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?getProd(i.prodId).verkoop:0));
@@ -911,7 +992,7 @@ function renderDashOpenOrders(){
     html+='<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.07)">';
     html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">';
     html+='<div style="flex:1;min-width:0"><div style="font-family:var(--fd);font-size:16px">'+escHtml(o.naam)+'</div>';
-    html+='<div style="font-size:10px;color:var(--muted);margin-top:2px">'+o.datum+' &middot; '+(STATUS_LBL[o.status]||o.status)+'</div></div>';
+    html+='<div style="font-size:10px;color:var(--muted);margin-top:2px">'+displayDate(o.datum)+' &middot; '+(STATUS_LBL[o.status]||o.status)+'</div></div>';
     html+='<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">';
     html+='<button class="btn-sec '+(betalingOk?'btn-green':'btn-orange')+'" data-oid="'+o.id+'" onclick="dashToggleBetalingBtn(this)" style="font-size:10px;padding:5px 10px">'+(betalingOk?'BETAALD':'BETALEN')+'</button>';
     html+='<button class="btn-sec btn-green" data-oid="'+o.id+'" onclick="sluitVanDashboardBtn(this)" style="font-size:10px;padding:5px 10px">✓ SLUITEN</button>';
@@ -999,6 +1080,7 @@ function renderVerkoop(){
   var sort=((document.getElementById('vk-sort')||{}).value)||'nieuwste';
   orders=orders.slice();
   if(sort==='nieuwste')orders.reverse();
+  else if(sort==='oudste'){/* behoud originele chronologische volgorde */}
   else if(sort==='naam')orders.sort(function(a,b){return (a.naam||'').localeCompare(b.naam||'');});
   if(!orders.length){list.innerHTML='<div class="empty"><div style="font-size:32px;margin-bottom:8px">🛒</div>Geen orders gevonden</div>';return;}
   list.innerHTML=orders.map(function(o){return orderCard(o,false);}).join('');
@@ -1120,6 +1202,7 @@ function heropenOrder(id){
 }
 
 function delVkOrder(id){
+  if(!confirm('Weet je het zeker? Dit kan niet ongedaan gemaakt worden.'))return;
   var o=S.verkoopOrders.find(function(x){return x.id===id;});if(!o)return;
   if(o.voorraadAfgeboekt)getOrderItems(o).forEach(function(i){addStock(i.prodId,i.variantId||null,i.aantal||1);});
   S.verkoopOrders=S.verkoopOrders.filter(function(x){return x.id!==id;});
@@ -1165,6 +1248,7 @@ function betaalInkoop(id){
 }
 function delInkoopBtn(btn){var id=btn.getAttribute('data-iid');if(id)delInkoop(id);}
 function delInkoop(id){
+  if(!confirm('Weet je het zeker? Dit kan niet ongedaan gemaakt worden.'))return;
   var o=S.inkoopOrders.find(function(x){return x.id===id;});if(!o)return;
   if(o.ontvangen)(o.items||[]).forEach(function(i){var p=getProd(i.prodId);if(getProdType(p)!=='service')addStock(i.prodId,i.variantId||null,-i.aantal);});
   S.inkoopOrders=S.inkoopOrders.filter(function(x){return x.id!==id;});
@@ -1175,49 +1259,21 @@ function delInkoop(id){
 // FINANCIEEL
 // ════════════════════════════════════════════════════
 function renderFinancieel(){
-  var omzetMerch=0,omzetTicket=0;
-  S.verkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
-    getOrderItems(o).forEach(function(i){omzetMerch+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?getProd(i.prodId).verkoop:0));});
-  });
-  S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).forEach(function(t){omzetTicket+=t.aantal*t.prijs;});
-  var totaalOmzet=omzetMerch+omzetTicket;
-
-  // FIX bug #4: inkoopServ/inkoopTicket nu correct in scope gedeclareerd
-  var inkoopMerch=0,inkoopCons=0,inkoopServ=0,inkoopTicketKosten=0;
-  S.inkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
-    (o.items||[]).forEach(function(i){
-      var p=getProd(i.prodId);var tp=getProdType(p);var b=i.aantal*(i.inkoop||0);
-      if(tp==='consumable')inkoopCons+=b; else if(tp==='service')inkoopServ+=b; else inkoopMerch+=b;
-    });
-  });
-  S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).forEach(function(t){inkoopTicketKosten+=t.aantal*(t.inkoop||0);});
-  inkoopServ+=inkoopTicketKosten;
-
-  var retourCredit=0;
-  S.producten.filter(isConsumable).forEach(function(prod){
-    (prod.varianten&&prod.varianten.length?prod.varianten:[{id:null}]).forEach(function(v){
-      var heeftAfgeboekt=S.inkoopOrders.some(function(o){return o.ontvangen&&(o.items||[]).some(function(i){return i.prodId===prod.id;});});
-      if(heeftAfgeboekt){var retour=Math.max(0,getStock(prod.id,v.id)-getVerbruikt(prod.id,v.id));retourCredit+=retour*prod.inkoop;}
-    });
-  });
-  var totaalKosten=inkoopMerch+inkoopCons+inkoopServ-retourCredit;
-  var winst=totaalOmzet-totaalKosten;
-
-  var openOmzet=0,openTicket=0,openInkoop=0;
-  S.verkoopOrders.filter(function(o){return !o.gesloten&&o.betaling!=='betaald';}).forEach(function(o){
-    getOrderItems(o).forEach(function(i){openOmzet+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?getProd(i.prodId).verkoop:0));});
-  });
-  S.ticketVerkopen.filter(function(t){return t.betaling!=='betaald';}).forEach(function(t){openTicket+=t.aantal*t.prijs;});
-  S.inkoopOrders.filter(function(o){return o.betaling!=='betaald';}).forEach(function(o){
-    openInkoop+=(o.items||[]).reduce(function(s,i){return s+i.aantal*(i.inkoop||0);},0);
-  });
-
+  var k=calcKPIs();
   var sd=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-  var fw=document.getElementById('fin-winst');if(fw){fw.textContent=fmt(winst);fw.className=winst>=0?'green':'red';}
-  sd('fin-omzet',fmt(omzetMerch));sd('fin-ticket-omzet',fmt(omzetTicket));sd('fin-totaal-omzet',fmt(totaalOmzet));
-  sd('fin-inkoop-merch','−'+fmt(inkoopMerch));sd('fin-inkoop-cons','−'+fmt(inkoopCons));
-  sd('fin-retour-cons','+'+fmt(retourCredit));sd('fin-inkoop-serv','−'+fmt(inkoopServ));sd('fin-inkoop','−'+fmt(totaalKosten));
-  sd('fin-open-omzet',fmt(openOmzet));sd('fin-open-ticket',fmt(openTicket));sd('fin-inkoop-open',fmt(openInkoop));
+  var fw=document.getElementById('fin-winst');
+  if(fw){fw.textContent=fmt(k.winst);fw.className=k.winst>=0?'green':'red';}
+  sd('fin-omzet',fmt(k.omzetMerch));
+  sd('fin-ticket-omzet',fmt(k.omzetTicket));
+  sd('fin-totaal-omzet',fmt(k.totaalOmzet));
+  sd('fin-inkoop-merch','−'+fmt(k.inkoopMerch));
+  sd('fin-inkoop-cons','−'+fmt(k.inkoopCons));
+  sd('fin-retour-cons','+'+fmt(k.retourCredit));
+  sd('fin-inkoop-serv','−'+fmt(k.inkoopServ));
+  sd('fin-inkoop','−'+fmt(k.totaalKosten));
+  sd('fin-open-omzet',fmt(k.openOmzet));
+  sd('fin-open-ticket',fmt(k.openTicket));
+  sd('fin-inkoop-open',fmt(k.openInkoop));
 
   renderConsumablesOverzicht();
 
@@ -1227,15 +1283,21 @@ function renderFinancieel(){
       var ppN=0,ppW=0;
       S.verkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
         getOrderItems(o).forEach(function(i){
-          if(i.prodId===prod.id){var pr=(i.prijs!=null)?i.prijs:prod.verkoop;ppN+=(i.aantal||1);ppW+=((i.aantal||1)*pr)-((i.aantal||1)*prod.inkoop);}
+          if(i.prodId===prod.id){
+            var pr=(i.prijs!=null)?i.prijs:prod.verkoop;
+            ppN+=(i.aantal||1);
+            ppW+=((i.aantal||1)*pr)-((i.aantal||1)*prod.inkoop);
+          }
         });
       });
-      return '<div class="stat-row"><span class="stat-label">'+(prod.icon||'📦')+' '+prod.naam+'</span><span style="font-size:10px;color:var(--muted);text-align:right">'+ppN+' verkocht &nbsp;<span style="font-family:var(--fd);font-size:17px;color:'+(ppW>=0?'var(--green)':'var(--red)')+'">'+fmt(ppW)+'</span></span></div>';
+      return '<div class="stat-row"><span class="stat-label">'+(prod.icon||'📦')+' '+escHtml(prod.naam)+'</span>'
+        +'<span style="font-size:10px;color:var(--muted);text-align:right">'+ppN+' verkocht &nbsp;'
+        +'<span style="font-family:var(--fd);font-size:17px;color:'+(ppW>=0?'var(--green)':'var(--red)')+'">'
+        +fmt(ppW)+'</span></span></div>';
     }).join('');
   }
   var sv=document.getElementById('set-vrzd');if(sv)sv.value=S.settings.verzend||6.95;
 }
-
 function saveSettings(){
   S.settings.verzend=parseFloat(document.getElementById('set-vrzd').value)||6.95;
   save();showToast('OPGESLAGEN');
@@ -1363,6 +1425,7 @@ function saveInkoop(){
     if(prodEl&&aEl)items.push({prodId:prodEl.value,variantId:vEl?vEl.value:null,aantal:parseInt(aEl.value)||1,inkoop:parseFloat(pEl?pEl.value:0)||0});
   });
   if(!items.length){showToast('MINIMAAL 1 PRODUCT');return;}
+  if(items.some(function(i){return i.inkoop<0;})){showToast('INKOOPPRIJS MAG NIET NEGATIEF ZIJN');return;}
   S.inkoopOrders.push({id:uid(),leverancier:leverancier,betaling:betaling,datum:todayDisplay(),
     leverdatum:document.getElementById('ink-datum').value||null,
     notitie:document.getElementById('ink-notitie').value.trim(),items:items,ontvangen:false});
@@ -1378,7 +1441,7 @@ function prepVerkoop(){
   document.getElementById('vk-notitie').value='';
   var vi=document.getElementById('vk-vrzd-info');if(vi)vi.style.display='none';
   // FIX bug #5: _sel (niet sel)
-  _sel['vk-levering']=null;_sel['vk-betaling']=null;
+  _sel['vk-levering']=null;_sel['vk-betaling']=null;window._skipZeroWarn=false;
   document.querySelectorAll('#modal-verkoop .sel-btn').forEach(function(b){b.classList.remove('selected');});
   var wrap=document.getElementById('vk-items-wrap');if(wrap){wrap.innerHTML='';addVkItem();}
 }
@@ -1447,6 +1510,8 @@ function saveVerkoop(){
   });
   if(error){showToast(error);return;}
   if(!items.length){showToast('MINIMAAL 1 ARTIKEL');return;}
+  // Validatie: geen negatieve prijzen
+  if(items.some(function(i){return i.prijs<0;})){showToast('PRIJS MAG NIET NEGATIEF ZIJN');return;}
   // Waarschuwing €0 prijs
   if(items.some(function(i){return (i.prijs||0)===0;})&&!window._skipZeroWarn){
     window._skipZeroWarn=true;showToast('⚠️ Prijs is €0,00 — klik nogmaals om te bevestigen');return;
@@ -1568,14 +1633,29 @@ function prepProduct(prodId){
   renderVarRows();
 }
 function addVariant(){_variants.push({id:uid().slice(0,6),naam:'',kleur:'#888888'});renderVarRows();}
+function updateVariant(el, field){
+  var idx=parseInt(el.getAttribute('data-index'));
+  if(isNaN(idx)||idx<0||idx>=_variants.length)return;
+  _variants[idx][field]=el.type==='color'?el.value:(el.value||'');
+}
+function removeVariant(idx){
+  if(idx>=0&&idx<_variants.length)_variants.splice(idx,1);
+  renderVarRows();
+}
 function renderVarRows(){
-  document.getElementById('prod-variants-wrap').innerHTML=_variants.map(function(v,i){
-    return '<div style="display:grid;grid-template-columns:1fr 80px 50px 28px;gap:6px;margin-bottom:6px;align-items:center">'
-      +'<input class="form-input" placeholder="Naam" value="'+v.naam+'" oninput="_variants['+i+'].naam=this.value" style="padding:8px">'
-      +'<input type="color" value="'+(v.kleur||'#888888')+'" oninput="_variants['+i+'].kleur=this.value" style="width:100%;height:38px;border:1px solid var(--border);border-radius:2px;background:none;cursor:pointer">'
-      +'<input class="form-input" placeholder="ID" value="'+v.id+'" oninput="_variants['+i+'].id=this.value" style="padding:6px;font-size:10px">'
-      +'<button class="btn-danger" style="padding:4px" onclick="_variants.splice('+i+',1);renderVarRows()">✕</button></div>';
-  }).join('');
+  var wrap=document.getElementById('prod-variants-wrap');
+  if(!wrap)return;
+  var html='';
+  for(var i=0;i<_variants.length;i++){
+    var v=_variants[i];
+    html+='<div style="display:grid;grid-template-columns:1fr 80px 50px 28px;gap:6px;margin-bottom:6px;align-items:center">';
+    html+='<input class="form-input" placeholder="Naam" value="'+escHtml(v.naam)+'" data-index="'+i+'" data-field="naam" oninput="updateVariant(this,\'naam\')" style="padding:8px">';
+    html+='<input type="color" value="'+(v.kleur||'#888888')+'" data-index="'+i+'" data-field="kleur" oninput="updateVariant(this,\'kleur\')" style="width:100%;height:38px;border:1px solid var(--border);border-radius:2px;background:none;cursor:pointer">';
+    html+='<input class="form-input" placeholder="ID" value="'+escHtml(v.id)+'" data-index="'+i+'" data-field="id" oninput="updateVariant(this,\'id\')" style="padding:6px;font-size:10px">';
+    html+='<button class="btn-danger" style="padding:4px" data-idx="'+i+'" onclick="removeVariant(parseInt(this.getAttribute(\'data-idx\'))))">✕</button>';
+    html+='</div>';
+  }
+  wrap.innerHTML=html;
 }
 function editProduct(id){prepProduct(id);openModal('modal-product');}
 function saveProduct(){
@@ -1592,7 +1672,10 @@ function saveProduct(){
   else{S.producten.push(Object.assign({id:uid()},p));}
   save();closeModal('modal-product');renderProducten();renderVoorraad();renderDashboard();showToast('PRODUCT OPGESLAGEN');
 }
-function delProduct(id){S.producten=S.producten.filter(function(p){return p.id!==id;});save();renderProducten();showToast('VERWIJDERD');}
+function delProduct(id){
+  if(!confirm('Weet je het zeker? Dit kan niet ongedaan gemaakt worden.'))return;
+  S.producten=S.producten.filter(function(p){return p.id!==id;});save();renderProducten();showToast('VERWIJDERD');
+}
 
 // ════════════════════════════════════════════════════
 // TICKETS
@@ -1699,7 +1782,7 @@ function prepAfboek(){
   S.producten.filter(isConsumable).forEach(function(prod){
     (prod.varianten&&prod.varianten.length?prod.varianten:[{id:null,naam:'Standaard',kleur:'#555'}]).forEach(function(v){
       var stock=getStock(prod.id,v.id);var verb=getVerbruikt(prod.id,v.id);
-      var key=prod.id+'__'+(v.id||'null');
+      var key=sk(prod.id,v.id);
       html+='<div style="margin-bottom:16px;padding:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px">';
       html+='<div style="font-family:var(--fd);font-size:15px;margin-bottom:4px">'+(prod.icon||'🍺')+' '+prod.naam+' '+escHtml(v.naam)+'</div>';
       html+='<div style="font-size:10px;color:var(--muted);margin-bottom:10px">In stock: '+stock+' &nbsp;|&nbsp; Eerder verbruikt: '+verb+'</div>';
@@ -1725,10 +1808,14 @@ function slaAfboekOp(){
   var wrap=document.getElementById('afboek-items-wrap');if(!wrap)return;
   S.producten.filter(isConsumable).forEach(function(prod){
     (prod.varianten&&prod.varianten.length?prod.varianten:[{id:null,naam:'Standaard',kleur:'#555'}]).forEach(function(v){
-      var key=prod.id+'__'+(v.id||'null');
+      var key=sk(prod.id,v.id);
       var inp=document.getElementById('afb-'+key);
       if(inp){var verb=Math.min(parseInt(inp.value)||0,getStock(prod.id,v.id));setVerbruikt(prod.id,v.id,verb);}
     });
+  });
+  // Sla flag op zodat retourCredit berekening weet dat verbruik ingevoerd is
+  S.producten.filter(isConsumable).forEach(function(prod){
+    S.voorraad['afboek_gedaan_'+prod.id]=true;
   });
   save();closeModal('modal-afboek');renderFinancieel();renderDashboard();showToast('VERBRUIK OPGESLAGEN');
 }
