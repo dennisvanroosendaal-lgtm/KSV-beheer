@@ -991,48 +991,43 @@ function showToast(msg){
 // ════════════════════════════════════════════════════
 function renderDashboard(){
   var kpi=calcKPIs();
-  var omzet=kpi.totaalOmzet,betaaldeInkoop=kpi.totaalKosten,openOrders=kpi.openOrders,totStock=0;
-  S.verkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
-    getOrderItems(o).forEach(function(i){
-      omzet+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?getProd(i.prodId).verkoop:0));
-    });
-  });
-  S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).forEach(function(t){omzet+=t.aantal*t.prijs;});
-  S.inkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
-    (o.items||[]).forEach(function(i){betaaldeInkoop+=i.aantal*(i.inkoop||0);});
-  });
-  S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).forEach(function(t){betaaldeInkoop+=t.aantal*(t.inkoop||0);});
-  openOrders=S.verkoopOrders.filter(function(o){return !o.gesloten;}).length;
+  var totStock=0;
   S.producten.forEach(function(p){(p.varianten||[]).forEach(function(v){totStock+=getStock(p.id,v.id);});});
-  var winst=omzet-betaaldeInkoop;
-  var dw=document.getElementById('dash-winst');
-  if(dw){dw.textContent=fmt(winst);dw.className=winst>=0?'green':'red';}
-  var sd=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-  sd('dash-omzet',fmt(omzet));sd('dash-inkoop',fmt(betaaldeInkoop));sd('dash-open',openOrders);sd('dash-stock',totStock);
 
-  var omzetMerch=0,omzetTicket=0,omzetVerwacht=0;
-  S.verkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
-    getOrderItems(o).forEach(function(i){omzetMerch+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?getProd(i.prodId).verkoop:0));});
-  });
-  S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).forEach(function(t){omzetTicket+=t.aantal*t.prijs;});
+  // KPI tiles — rechtstreeks uit calcKPIs()
+  var dw=document.getElementById('dash-winst');
+  if(dw){dw.textContent=fmt(kpi.winst);dw.className=kpi.winst>=0?'green':'red';}
+  var sd=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+  sd('dash-omzet',fmt(kpi.totaalOmzet));
+  sd('dash-inkoop',fmt(kpi.totaalKosten));
+  sd('dash-open',kpi.openOrders);
+  sd('dash-stock',totStock);
+
+  // Omzet breakdown — uit calcKPIs()
+  sd('dash-omzet-merch',fmt(kpi.omzetMerch));
+  sd('dash-omzet-ticket',fmt(kpi.omzetTicket));
+
+  // Verwachte omzet (open/onbetaald)
+  var omzetVerwacht=0;
   S.verkoopOrders.filter(function(o){return !o.gesloten&&o.betaling!=='betaald';}).forEach(function(o){
     getOrderItems(o).forEach(function(i){omzetVerwacht+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?getProd(i.prodId).verkoop:0));});
   });
   S.ticketVerkopen.filter(function(t){return t.betaling!=='betaald';}).forEach(function(t){omzetVerwacht+=t.aantal*t.prijs;});
-  sd('dash-omzet-merch',fmt(omzetMerch));sd('dash-omzet-ticket',fmt(omzetTicket));sd('dash-omzet-verwacht',fmt(omzetVerwacht));
+  sd('dash-omzet-verwacht',fmt(omzetVerwacht));
 
-  var kostenMerch=0,kostenCons=0,kostenServ=0,kostenVerwacht=0;
-  S.inkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
-    (o.items||[]).forEach(function(i){
-      var p=getProd(i.prodId);var tp=getProdType(p);var b=i.aantal*(i.inkoop||0);
-      if(tp==='consumable')kostenCons+=b; else if(tp==='service')kostenServ+=b; else kostenMerch+=b;
-    });
-  });
+  // Kosten breakdown — uit calcKPIs()
+  sd('dash-kosten-merch',fmt(kpi.inkoopMerch));
+  sd('dash-kosten-cons',fmt(kpi.inkoopCons));
+  sd('dash-kosten-serv',fmt(kpi.inkoopServ));
+
+  // Verwachte kosten (onbetaald)
+  var kostenVerwacht=0;
   S.inkoopOrders.filter(function(o){return o.betaling!=='betaald';}).forEach(function(o){
     kostenVerwacht+=(o.items||[]).reduce(function(s,i){return s+i.aantal*(i.inkoop||0);},0);
   });
-  sd('dash-kosten-merch',fmt(kostenMerch));sd('dash-kosten-cons',fmt(kostenCons));sd('dash-kosten-serv',fmt(kostenServ));sd('dash-kosten-verwacht',fmt(kostenVerwacht));
+  sd('dash-kosten-verwacht',fmt(kostenVerwacht));
 
+  // Alerts
   var alerts=document.getElementById('dash-alerts');
   var al='';
   S.producten.forEach(function(p){
@@ -1048,6 +1043,7 @@ function renderDashboard(){
   if(openBet.length)al+='<div class="alert-box alert-orange"><div class="al">💰 '+openBet.length+' verkooporder(s) betaling open</div></div>';
   if(alerts)alerts.innerHTML=al;
 
+  // Merchandise voorraad per variant
   var vr=document.getElementById('dash-voorraad-rows');
   if(vr){
     var vrHtml='';
@@ -1061,10 +1057,12 @@ function renderDashboard(){
     vr.innerHTML=vrHtml;
   }
 
+  // Tickets
   var tickCount=S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).reduce(function(s,t){return s+t.aantal;},0);
   var tickOpen=S.ticketVerkopen.filter(function(t){return t.betaling!=='betaald';}).reduce(function(s,t){return s+t.aantal;},0);
   sd('dash-ticket-count',tickCount);sd('dash-ticket-open',tickOpen);
 
+  // Consumables
   var consEl=document.getElementById('dash-consumables');
   if(consEl){
     var cProds=S.producten.filter(isConsumable);
@@ -1079,6 +1077,7 @@ function renderDashboard(){
       consEl.innerHTML=cHtml;
     }
   }
+
   renderDashOpenOrders();
 }
 
