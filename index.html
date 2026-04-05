@@ -238,17 +238,11 @@
 </div>
 
 <!-- ════ APP ════ -->
-<input type="file" id="import-file-input" accept=".json" style="display:none" onchange="handleImport(this)">
 
 <div class="app-header">
   <button class="btn-sec" id="home-btn" style="font-size:16px;padding:5px 9px;border-color:transparent;flex-shrink:0" title="Startpagina">🏠</button>
   <div class="app-title">KERKWERVE <span>SUMMERVIBE</span></div>
-  <div class="hdr-btns">
-    <button class="btn-sec" onclick="exportData()" style="color:var(--muted);font-size:11px" title="Backup">💾</button>
-    <button class="btn-sec" onclick="importData()" style="color:var(--muted);font-size:11px" title="Laden">📂</button>
-    <button class="btn-sec" onclick="openModal('modal-inkoop')" style="color:var(--red);border-color:var(--red)">+ INKOOP</button>
-    <button class="btn-sec" onclick="openModal('modal-verkoop')" style="color:var(--accent);border-color:var(--accent)">+ VERKOOP</button>
-  </div>
+  <div class="hdr-btns"><span id="sync-status" style="font-size:9px;letter-spacing:1px;color:var(--muted);flex-shrink:0;white-space:nowrap">☁️ –</span><button class="btn-sec" onclick="openModal('modal-inkoop')" style="color:var(--red);border-color:var(--red)">+ INKOOP</button><button class="btn-sec" onclick="openModal('modal-verkoop')" style="color:var(--accent);border-color:var(--accent)">+ VERKOOP</button></div>
 </div>
 
 <div class="tabs" id="tabs-bar">
@@ -642,9 +636,93 @@
  * V#2     — Chart.js CDN import verwijderd (bespaart 283KB)
  * V#3     — displayDate() voor uniforme datumweergave, today() als interne opslag
  * V#4     — Negatieve prijzen worden gevalideerd in saveVerkoop() en saveInkoop()
+ * Cloud   — Volledig automatische JSONBin.io sync: laden bij start, opslaan na elke wijziging
  */
 
 // ════════════════════════════════════════════════════
+// CLOUD SYNC — JSONBin.io
+// ════════════════════════════════════════════════════
+var KSV_BIN_ID = '69d2b27436566621a8805757';
+var KSV_API_KEY = '$2a$10$DTMyywKe.kvN4KogAjdplOF.RUZozano.ux1fdpexn0pop5X5iJa6';
+var _syncing = false;
+var _syncTimeout = null;
+
+function updateSyncStatus(state){
+  var el=document.getElementById('sync-status');if(!el)return;
+  var now=new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
+  var states={
+    ok:{tekst:'☁️ '+now,kleur:'var(--green)'},
+    laden:{tekst:'⏳ LADEN',kleur:'var(--muted)'},
+    opslaan:{tekst:'⏳ SYNC',kleur:'var(--muted)'},
+    fout:{tekst:'⚠️ OFFLINE',kleur:'var(--orange)'}
+  };
+  var st=states[state]||states.fout;
+  el.textContent=st.tekst;el.style.color=st.kleur;
+}
+
+function syncLaden(){
+  if(_syncing)return;
+  _syncing=true;
+  updateSyncStatus('laden');
+  fetch('https://api.jsonbin.io/v3/b/'+KSV_BIN_ID+'/latest',{
+    headers:{'X-Master-Key':KSV_API_KEY}
+  })
+  .then(function(res){
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    return res.json();
+  })
+  .then(function(data){
+    if(data.record&&data.record.producten){
+      S=data.record;
+      if(!S.ticketVerkopen)S.ticketVerkopen=[];
+      if(!S.settings)S.settings={verzend:6.95};
+      S.producten.forEach(function(p){if(!p.type)p.type='merch';if(!p.minStock)p.minStock=2;});
+      localStorage.setItem('ksv3',JSON.stringify(S));
+      renderDashboard();
+    }
+    updateSyncStatus('ok');
+    _syncing=false;
+  })
+  .catch(function(err){
+    console.warn('syncLaden fout:',err.message);
+    updateSyncStatus('fout');
+    _syncing=false;
+  });
+}
+
+function syncOpslaan(){
+  // Debounce: wacht 1.5s na laatste save() aanroep voordat we uploaden
+  if(_syncTimeout)clearTimeout(_syncTimeout);
+  _syncTimeout=setTimeout(function(){
+    if(_syncing)return;
+    _syncing=true;
+    updateSyncStatus('opslaan');
+    fetch('https://api.jsonbin.io/v3/b/'+KSV_BIN_ID,{
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        'X-Master-Key':KSV_API_KEY
+      },
+      body:JSON.stringify(S)
+    })
+    .then(function(res){
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      return res.json();
+    })
+    .then(function(){
+      updateSyncStatus('ok');
+      _syncing=false;
+    })
+    .catch(function(err){
+      console.warn('syncOpslaan fout:',err.message);
+      updateSyncStatus('fout');
+      _syncing=false;
+    });
+  },1500);
+}
+
+
+var _syncing = false;// ════════════════════════════════════════════════════
 // STATE & STORAGE
 // ════════════════════════════════════════════════════
 var S = {
@@ -667,6 +745,7 @@ var S = {
 function save(){
   try{localStorage.setItem('ksv3',JSON.stringify(S));}
   catch(e){showToast('⚠️ OPSLAAN MISLUKT — Geheugen vol?');}
+  syncOpslaan();
 }
 function load(){
   try{
@@ -1939,34 +2018,7 @@ function exportCSV(){
   a.href=url;a.download='KSV_PnL_'+todayDisplay()+'.csv';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
   showToast('CSV GEEXPORTEERD');
-}
-
-function exportData(){
-  var blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;
-  // FIX bug #2: a.download correct (= teken aanwezig)
-  a.download='ksv-backup-'+todayDisplay()+'.json';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-  showToast('BACKUP GEDOWNLOAD');
-}
-function importData(){document.getElementById('import-file-input').click();}
-function handleImport(input){
-  var file=input.files[0];if(!file)return;
-  var reader=new FileReader();
-  reader.onload=function(ev){
-    try{
-      var data=JSON.parse(ev.target.result);
-      if(!data.producten||!data.verkoopOrders){showToast('ONGELDIG BESTAND');return;}
-      S=data;save();renderDashboard();showToast('BACKUP GELADEN');
-    }catch(e){showToast('FOUT BIJ LADEN');}
-    input.value='';
-  };
-  reader.readAsText(file);
-}
-
-// ════════════════════════════════════════════════════
+}// ════════════════════════════════════════════════════
 // RESET
 // ════════════════════════════════════════════════════
 function resetAlles(){
@@ -1984,6 +2036,7 @@ function resetAlles(){
 // ════════════════════════════════════════════════════
 load();
 renderDashboard();
+syncLaden();
 if('Notification' in window && Notification.permission==='granted')herstelHerinneringen();
 updateLandingStats();
 
