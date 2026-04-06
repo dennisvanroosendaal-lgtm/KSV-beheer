@@ -11,6 +11,9 @@
     --white:#f5f0e8; --muted:rgba(245,240,232,0.38); --accent:#ffdd00;
     --green:#4ade80; --red:#f87171; --blue:#60a5fa; --orange:#fb923c;
     --fd:'Bebas Neue','Impact',sans-serif; --fm:'Space Mono','Courier New',monospace;
+    --hdr-h:41px;
+    --tabs-h:40px;
+    --bar-h:81px; /* --hdr-h + --tabs-h */
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   body{background:var(--black);color:var(--white);font-family:var(--fm);font-size:13px;}
@@ -51,7 +54,8 @@
   .app-header{
     background:var(--dark);border-bottom:1px solid var(--border);
     padding:10px 16px;display:flex;justify-content:space-between;
-    align-items:center;position:sticky;top:0;z-index:100;gap:10px;
+    align-items:center;position:fixed;top:0;left:0;right:0;z-index:100;gap:10px;
+    height:var(--hdr-h);box-sizing:border-box;
   }
   .app-title{font-family:var(--fd);font-size:14px;letter-spacing:2px;flex:1;}
   .app-title span{color:var(--accent);}
@@ -60,7 +64,9 @@
   /* ── TABS ── */
   .tabs{
     display:flex;background:var(--dark);border-bottom:1px solid var(--border);
-    overflow-x:auto;scrollbar-width:none;position:sticky;top:50px;z-index:99;
+    overflow-x:auto;scrollbar-width:none;position:fixed;
+    top:var(--hdr-h);left:0;right:0;z-index:99;
+    height:var(--tabs-h);box-sizing:border-box;
   }
   .tabs::-webkit-scrollbar{display:none;}
   .tab{
@@ -71,7 +77,7 @@
   .tab.active{color:var(--accent);border-color:var(--accent);}
 
   /* ── CONTENT ── */
-  .content{padding:16px;display:none;}
+  .content{padding:16px;padding-top:calc(var(--bar-h) + 12px);display:none;}
   .content.active{display:block;}
 
   /* ── CARDS ── */
@@ -141,6 +147,8 @@
   .order-card.s-ingepakt,.order-card.s-reserveren{border-left-color:var(--orange);}
   .order-card.s-verzonden,.order-card.s-afgeleverd,.order-card.s-langsbrengen,.order-card.s-festival{border-left-color:var(--green);}
   .order-card.s-gesloten{border-left-color:rgba(255,255,255,0.15);opacity:.7;}
+  /* [NIEUW] Interne uitgifte */
+  .order-card.s-intern{border-left-color:var(--blue);}
   .order-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
   .order-name{font-family:var(--fd);font-size:17px;letter-spacing:1px;}
   .order-date{font-size:10px;color:var(--muted);}
@@ -242,7 +250,7 @@
 <div class="app-header">
   
   <div class="app-title" id="home-btn" style="cursor:pointer" title="Startpagina">KERKWERVE <span>SUMMERVIBE</span></div>
-  <div class="hdr-btns"><span id="sync-status" style="font-size:9px;letter-spacing:1px;color:var(--muted);flex-shrink:0;white-space:nowrap">☁️ –</span><button class="btn-sec" onclick="openModal('modal-inkoop')" style="color:var(--red);border-color:var(--red)">+ INKOOP</button><button class="btn-sec" onclick="openModal('modal-verkoop')" style="color:var(--accent);border-color:var(--accent)">+ VERKOOP</button></div>
+  <div class="hdr-btns"><span id="sync-status" style="font-size:9px;letter-spacing:1px;color:var(--muted);flex-shrink:0;white-space:nowrap">☁️ –</span><button class="btn-sec" onclick="openModal('modal-inkoop')" style="color:var(--red);border:none;background:none;padding:6px 8px">+ INKOOP</button><button class="btn-sec" onclick="openModal('modal-verkoop')" style="color:var(--accent);border:none;background:none;padding:6px 8px">+ VERKOOP</button></div>
 </div>
 
 <div class="tabs" id="tabs-bar">
@@ -253,6 +261,7 @@
   <div class="tab"         onclick="showTab('verkoop')">VERKOOP</div>
   <div class="tab"         onclick="showTab('inkoop')">INKOOP</div>
   <div class="tab"         onclick="showTab('tickets')">TICKETS</div>
+  <div class="tab"         onclick="showTab('lineup')">LINEUP</div>
   <div class="tab"         onclick="showTab('afgerond')">AFGEROND</div>
   <div class="tab"         onclick="showTab('producten')">PRODUCTEN</div>
 </div>
@@ -284,6 +293,24 @@
     </div>
   </div>
   <div id="dash-alerts"></div>
+
+  <!-- ── GRAFIEKEN ── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+    <!-- Donut: omzet / kosten / winst -->
+    <div class="card" style="margin-bottom:0;padding:14px 10px">
+      <div class="card-title" style="margin-bottom:8px">P&amp;L OVERZICHT</div>
+      <div style="position:relative;display:flex;justify-content:center;align-items:center">
+        <svg id="dash-donut" viewBox="0 0 120 120" width="120" height="120" style="flex-shrink:0"></svg>
+        <div id="dash-donut-legend" style="margin-left:10px;font-size:9px;line-height:1.8"></div>
+      </div>
+    </div>
+    <!-- Bar: merchandise winst ranking -->
+    <div class="card" style="margin-bottom:0;padding:14px 10px">
+      <div class="card-title" style="margin-bottom:8px">WINST PER PRODUCT</div>
+      <svg id="dash-bar" width="100%" style="display:block"></svg>
+    </div>
+  </div>
+  <!-- ── EINDE GRAFIEKEN ── -->
   <div class="card">
     <div class="card-title">OMZET BREAKDOWN</div>
     <div class="stat-row"><span class="stat-label">🧢 Merchandise</span><span class="stat-value" id="dash-omzet-merch">€0</span></div>
@@ -320,6 +347,11 @@
   </div>
 </div>
 
+<!-- OVERZICHT -->
+<div class="content" id="tab-overzicht">
+  <div id="overzicht-content"></div>
+</div>
+
 <!-- VERKOOP -->
 <div class="content" id="tab-verkoop">
   <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
@@ -344,76 +376,73 @@
   <div id="inkoop-list"></div>
 </div>
 
-<!-- AFGEROND -->
-<div class="content" id="tab-afgerond">
-  <input class="search-bar" type="text" id="afg-search" placeholder="🔍 Zoek afgeronde orders..." oninput="renderAfgerond()" style="margin-bottom:10px">
-  <div class="section-hdr"><div class="section-ttl">AFGERONDE VERKOOPORDERS</div></div>
-  <div id="afgerond-list"></div>
-  <div class="section-hdr" style="margin-top:16px"><div class="section-ttl">ONTVANGEN INKOOPORDERS</div></div>
-  <div id="afgerond-inkoop-list"></div>
-</div>
-
 <!-- FINANCIEEL -->
 <div class="content" id="tab-financieel">
   <div class="card" style="text-align:center;padding:20px 16px">
     <div style="font-size:9px;letter-spacing:4px;color:var(--muted);margin-bottom:6px">NETTO WINST / VERLIES</div>
-    <div id="fin-winst" class="green" style="font-family:var(--fd);font-size:72px;letter-spacing:-3px;line-height:1">€0,00</div>
+    <div id="fin-winst" class="green" style="font-family:var(--fd);font-size:72px;letter-spacing:-3px;line-height:1">&#8364;0,00</div>
     <div style="font-size:9px;color:var(--muted);margin-top:6px;letter-spacing:2px">Gerealiseerd op basis van betaalde orders</div>
   </div>
   <div class="card">
     <div class="card-title">OMZET</div>
-    <div class="stat-row"><span class="stat-label">🧢 Merchandise</span><span class="stat-value" id="fin-omzet">€0</span></div>
-    <div class="stat-row"><span class="stat-label">🎟 Tickets</span><span class="stat-value" id="fin-ticket-omzet">€0</span></div>
+    <div class="stat-row"><span class="stat-label">&#128098; Merchandise</span><span class="stat-value" id="fin-omzet">&#8364;0</span></div>
+    <div class="stat-row"><span class="stat-label">&#127903; Tickets</span><span class="stat-value" id="fin-ticket-omzet">&#8364;0</span></div>
     <div class="stat-row" style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-top:4px">
-      <span class="stat-label" style="color:var(--white)">Totale omzet</span><span class="stat-value green" id="fin-totaal-omzet">€0</span>
+      <span class="stat-label" style="color:var(--white)">Totale omzet</span><span class="stat-value green" id="fin-totaal-omzet">&#8364;0</span>
     </div>
   </div>
   <div class="card">
     <div class="card-title">KOSTEN</div>
-    <div class="stat-row"><span class="stat-label">🧢 Inkoop merchandise</span><span class="stat-value red" id="fin-inkoop-merch">€0</span></div>
-    <div class="stat-row"><span class="stat-label">🍺 Inkoop consumables</span><span class="stat-value red" id="fin-inkoop-cons">€0</span></div>
-    <div class="stat-row"><span class="stat-label" style="font-size:9px;color:var(--muted)">↳ Retour credit</span><span class="stat-value green" id="fin-retour-cons">€0</span></div>
-    <div class="stat-row"><span class="stat-label">⚙️ Services &amp; overige</span><span class="stat-value red" id="fin-inkoop-serv">€0</span></div>
+    <div class="stat-row"><span class="stat-label">&#128098; Inkoop merchandise</span><span class="stat-value red" id="fin-inkoop-merch">&#8364;0</span></div>
+    <div class="stat-row"><span class="stat-label">&#127866; Inkoop consumables</span><span class="stat-value red" id="fin-inkoop-cons">&#8364;0</span></div>
+    <div class="stat-row"><span class="stat-label" style="font-size:9px;color:var(--muted)">&#8627; Retour credit</span><span class="stat-value green" id="fin-retour-cons">&#8364;0</span></div>
+    <div class="stat-row"><span class="stat-label">&#9881;&#65039; Services &amp; overige</span><span class="stat-value red" id="fin-inkoop-serv">&#8364;0</span></div>
+    <div class="stat-row"><span class="stat-label" style="font-size:9px;color:var(--muted)">&#8627; Interne uitgiftes (inkoop)</span><span class="stat-value red" id="fin-inkoop-intern">&#8364;0</span></div>
+    <div class="stat-row"><span class="stat-label">&#127908; Artiestenkosten</span><span class="stat-value red" id="fin-inkoop-artiesten">&#8364;0</span></div>
     <div class="stat-row" style="border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;margin-top:4px">
-      <span class="stat-label" style="color:var(--white)">Totale kosten</span><span class="stat-value red" id="fin-inkoop">€0</span>
+      <span class="stat-label" style="color:var(--white)">Totale kosten</span><span class="stat-value red" id="fin-inkoop">&#8364;0</span>
     </div>
   </div>
   <div class="card">
+    <div class="card-title">&#127965;&#65039; INTERNE UITGIFTES</div>
+    <div id="fin-intern-wrap"><div class="empty" style="padding:8px;font-size:11px">Geen interne uitgiftes</div></div>
+  </div>
+  <div class="card">
     <div class="card-title">VERWACHT (OPEN / ONBETAALD)</div>
-    <div class="stat-row"><span class="stat-label">Merchandise omzet open</span><span class="stat-value blue" id="fin-open-omzet">€0</span></div>
-    <div class="stat-row"><span class="stat-label">Ticket omzet open</span><span class="stat-value blue" id="fin-open-ticket">€0</span></div>
-    <div class="stat-row"><span class="stat-label">Inkoopkosten onbetaald</span><span class="stat-value orange" id="fin-inkoop-open">€0</span></div>
+    <div class="stat-row"><span class="stat-label">Merchandise omzet open</span><span class="stat-value blue" id="fin-open-omzet">&#8364;0</span></div>
+    <div class="stat-row"><span class="stat-label">Ticket omzet open</span><span class="stat-value blue" id="fin-open-ticket">&#8364;0</span></div>
+    <div class="stat-row"><span class="stat-label">Inkoopkosten onbetaald</span><span class="stat-value orange" id="fin-inkoop-open">&#8364;0</span></div>
   </div>
   <div class="card"><div class="card-title">PER PRODUCT</div><div id="fin-per-product"></div></div>
   <div class="card">
-    <div class="card-title">🍺 CONSUMABLES — FESTIVAL AFREKENEN</div>
+    <div class="card-title">&#127866; CONSUMABLES &#8212; FESTIVAL AFREKENEN</div>
     <div id="fin-consumables-wrap"></div>
     <div style="margin-top:12px">
-      <button class="btn-primary" onclick="openModal('modal-afboek')" style="background:var(--orange);font-size:15px">FESTIVAL AFREKENEN — VERBRUIK INVOEREN</button>
+      <button class="btn-primary" onclick="openModal('modal-afboek')" style="background:var(--orange);font-size:15px">FESTIVAL AFREKENEN &#8212; VERBRUIK INVOEREN</button>
     </div>
   </div>
   <div class="card">
     <div class="card-title">EXPORT</div>
-    <button class="btn-primary" onclick="exportCSV()" style="background:rgba(74,222,128,0.15);border:1px solid var(--green);color:var(--green)">📊 EXPORTEER P&amp;L ALS CSV</button>
+    <button class="btn-primary" onclick="exportCSV()" style="background:rgba(74,222,128,0.15);border:1px solid var(--green);color:var(--green)">&#128202; EXPORTEER P&amp;L ALS CSV</button>
   </div>
   <div class="card">
     <div class="card-title">INSTELLINGEN</div>
     <div class="form-group">
-      <label class="form-label">Verzendkosten per order (€)</label>
+      <label class="form-label">Verzendkosten per order (&#8364;)</label>
       <input class="form-input" type="number" step="0.01" id="set-vrzd" value="6.95" onchange="saveSettings()">
     </div>
     <div class="divider"></div>
     <div class="form-group">
       <label class="form-label">Backup</label>
       <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button class="btn-sec" onclick="exportData()" style="flex:1;color:var(--green);border-color:var(--green)">💾 DOWNLOAD BACKUP</button>
-        <button class="btn-sec" onclick="importData()" style="flex:1;color:var(--blue);border-color:var(--blue)">📂 LAAD BACKUP</button>
+        <button class="btn-sec" onclick="exportData()" style="flex:1;color:var(--green);border-color:var(--green)">&#128190; DOWNLOAD BACKUP</button>
+        <button class="btn-sec" onclick="importData()" style="flex:1;color:var(--blue);border-color:var(--blue)">&#128194; LAAD BACKUP</button>
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">Gevaarlijke zone</label>
       <input class="form-input" type="text" id="reset-bevestig" placeholder="Type WISSEN om te bevestigen..." style="margin-bottom:8px">
-      <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;letter-spacing:2px" onclick="resetAlles()">🗑 ALLES WISSEN</button>
+      <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;letter-spacing:2px" onclick="resetAlles()">&#128465; ALLES WISSEN</button>
     </div>
   </div>
 </div>
@@ -423,25 +452,75 @@
   <div class="section-hdr">
     <div class="section-ttl">TICKETVERKOOP</div>
     <div style="display:flex;gap:8px">
-      <button class="btn-sec" onclick="planHerinnering()" style="color:var(--blue);border-color:var(--blue)" title="Herinnering">🔔</button>
+      <button class="btn-sec" onclick="planHerinnering()" style="color:var(--blue);border-color:var(--blue)" title="Herinnering">&#128276;</button>
       <button class="btn-sec" onclick="openModal('modal-ticket')" style="color:var(--accent);border-color:var(--accent)">+ TICKET</button>
     </div>
   </div>
   <div id="notif-status" style="margin-bottom:12px"></div>
   <div class="card" style="margin-bottom:12px">
     <div class="card-title">TOTAAL</div>
-    <div class="stat-row"><span class="stat-label">Omzet betaald</span><span class="stat-value green" id="tick-omzet">€0</span></div>
-    <div class="stat-row"><span class="stat-label">Tickable kosten</span><span class="stat-value red" id="tick-inkoop-totaal">€0</span></div>
-    <div class="stat-row"><span class="stat-label">Netto opbrengst</span><span class="stat-value green" id="tick-netto">€0</span></div>
+    <div class="stat-row"><span class="stat-label">Omzet betaald</span><span class="stat-value green" id="tick-omzet">&#8364;0</span></div>
+    <div class="stat-row"><span class="stat-label">Tickable kosten</span><span class="stat-value red" id="tick-inkoop-totaal">&#8364;0</span></div>
+    <div class="stat-row"><span class="stat-label">Netto opbrengst</span><span class="stat-value green" id="tick-netto">&#8364;0</span></div>
     <div class="stat-row"><span class="stat-label">Totaal tickets verkocht</span><span class="stat-value accent" id="tick-totaal-aantal">0</span></div>
-    <div class="stat-row"><span class="stat-label">Verwacht (onbetaald)</span><span class="stat-value orange" id="tick-verwacht">€0</span></div>
+    <div class="stat-row"><span class="stat-label">Verwacht (onbetaald)</span><span class="stat-value orange" id="tick-verwacht">&#8364;0</span></div>
   </div>
   <div id="ticket-list"></div>
 </div>
 
-<!-- OVERZICHT -->
-<div class="content" id="tab-overzicht">
-  <div id="overzicht-content"></div>
+<!-- LINEUP -->
+<div class="content" id="tab-lineup">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+    <div class="card" style="margin-bottom:0;text-align:center;padding:12px 6px">
+      <div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:2px">ARTIESTEN</div>
+      <div id="lu-count" style="font-family:var(--fd);font-size:24px;color:var(--accent)">0</div>
+    </div>
+    <div class="card" style="margin-bottom:0;text-align:center;padding:12px 6px">
+      <div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:2px">BEVESTIGD</div>
+      <div id="lu-confirmed" style="font-family:var(--fd);font-size:24px;color:var(--green)">0</div>
+    </div>
+    <div class="card" style="margin-bottom:0;text-align:center;padding:12px 6px">
+      <div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:2px">GAGEBUDGET</div>
+      <div id="lu-budget" style="font-family:var(--fd);font-size:22px;color:var(--orange)">€0</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+    <select class="form-select" id="lu-filter-status" onchange="renderLineup()" style="flex:0 0 auto;width:auto;padding:8px 10px;font-size:11px">
+      <option value="">Alle statussen</option>
+      <option value="interesse">Geinteresseerd</option>
+      <option value="bevestigd">Bevestigd</option>
+      <option value="contract">Contract getekend</option>
+      <option value="geannuleerd">Geannuleerd</option>
+    </select>
+    <select class="form-select" id="lu-filter-podium" onchange="renderLineup()" style="flex:0 0 auto;width:auto;padding:8px 10px;font-size:11px">
+      <option value="">Alle podia</option>
+    </select>
+    <select class="form-select" id="lu-filter-betaal" onchange="renderLineup()" style="flex:0 0 auto;width:auto;padding:8px 10px;font-size:11px">
+      <option value="">Alle betaalstatus</option>
+      <option value="aanbetaling">Aanbetaling gedaan</option>
+      <option value="volledig">Volledig betaald</option>
+    </select>
+    <div style="flex:1"></div>
+    <button class="btn-sec" onclick="openLuModal('modal-podium')" style="color:var(--blue);border-color:var(--blue);font-size:11px">+ PODIUM</button>
+    <button class="btn-sec" onclick="openLuModal('modal-artiest')" style="color:var(--accent);border-color:var(--accent)">+ ARTIEST</button>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">DAGSCHEMA</div>
+    <div id="lu-schema" style="overflow-x:auto"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">ARTIESTEN OVERZICHT</div>
+    <div id="lu-tabel"></div>
+  </div>
+</div>
+
+<!-- AFGEROND -->
+<div class="content" id="tab-afgerond">
+  <input class="search-bar" type="text" id="afg-search" placeholder="🔍 Zoek afgeronde orders..." oninput="renderAfgerond()" style="margin-bottom:10px">
+  <div class="section-hdr"><div class="section-ttl">AFGERONDE VERKOOPORDERS</div></div>
+  <div id="afgerond-list"></div>
+  <div class="section-hdr" style="margin-top:16px"><div class="section-ttl">ONTVANGEN INKOOPORDERS</div></div>
+  <div id="afgerond-inkoop-list"></div>
 </div>
 
 <!-- PRODUCTEN -->
@@ -459,30 +538,11 @@
     <button class="modal-close" onclick="closeModal('modal-inkoop')">✕</button>
     <div class="modal-title">INKOOPORDER</div>
     <div class="warn-box">💸 Kosten worden direct geboekt. Voorraad stijgt na ontvangst.</div>
-    <div class="form-group">
-      <label class="form-label">Leverancier / omschrijving</label>
-      <input class="form-input" type="text" id="ink-leverancier" placeholder="Bijv. Leverancier caps...">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Producten &amp; aantallen</label>
-      <div id="ink-items-wrap"></div>
-      <button class="btn-sec" style="width:100%;margin-top:6px" onclick="addInkoopItem()">+ PRODUCT TOEVOEGEN</button>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Betaalstatus</label>
-      <div class="grid2">
-        <button class="sel-btn" onclick="sel(this,'ink-betaling','betaald')">✅ Betaald</button>
-        <button class="sel-btn" onclick="sel(this,'ink-betaling','onbetaald')">⏳ Nog betalen</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Verwachte leverdatum</label>
-      <input class="form-input" type="date" id="ink-datum">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Notitie</label>
-      <input class="form-input" type="text" id="ink-notitie" placeholder="Optioneel...">
-    </div>
+    <div class="form-group"><label class="form-label">Leverancier / omschrijving</label><input class="form-input" type="text" id="ink-leverancier" placeholder="Bijv. Leverancier caps..."></div>
+    <div class="form-group"><label class="form-label">Producten &amp; aantallen</label><div id="ink-items-wrap"></div><button class="btn-sec" style="width:100%;margin-top:6px" onclick="addInkoopItem()">+ PRODUCT TOEVOEGEN</button></div>
+    <div class="form-group"><label class="form-label">Betaalstatus</label><div class="grid2"><button class="sel-btn" onclick="sel(this,'ink-betaling','betaald')">✅ Betaald</button><button class="sel-btn" onclick="sel(this,'ink-betaling','onbetaald')">⏳ Nog betalen</button></div></div>
+    <div class="form-group"><label class="form-label">Verwachte leverdatum</label><input class="form-input" type="date" id="ink-datum"></div>
+    <div class="form-group"><label class="form-label">Notitie</label><input class="form-input" type="text" id="ink-notitie" placeholder="Optioneel..."></div>
     <button class="btn-primary" onclick="saveInkoop()">OPSLAAN</button>
   </div>
 </div>
@@ -492,36 +552,12 @@
   <div class="modal">
     <button class="modal-close" onclick="closeModal('modal-verkoop')">✕</button>
     <div class="modal-title">VERKOOPORDER</div>
-    <div class="form-group">
-      <label class="form-label">Naam klant</label>
-      <input class="form-input" type="text" id="vk-naam" placeholder="Naam klant...">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Artikelen</label>
-      <div id="vk-items-wrap"></div>
-      <button class="btn-sec" onclick="addVkItem()" style="width:100%;margin-top:8px;color:var(--accent);border-color:var(--accent)">+ ARTIKEL TOEVOEGEN</button>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Levering</label>
-      <div class="grid2">
-        <button class="sel-btn" onclick="sel(this,'vk-levering','verzenden')">📦 Verzenden</button>
-        <button class="sel-btn" onclick="sel(this,'vk-levering','langsbrengen')">🚗 Langsbrengen</button>
-        <button class="sel-btn" onclick="sel(this,'vk-levering','festival')">🎪 Festival</button>
-        <button class="sel-btn" onclick="sel(this,'vk-levering','reserveren')">🔒 Reserveren</button>
-      </div>
-    </div>
+    <div class="form-group"><label class="form-label">Naam klant</label><input class="form-input" type="text" id="vk-naam" placeholder="Naam klant..."></div>
+    <div class="form-group"><label class="form-label">Artikelen</label><div id="vk-items-wrap"></div><button class="btn-sec" onclick="addVkItem()" style="width:100%;margin-top:8px;color:var(--accent);border-color:var(--accent)">+ ARTIKEL TOEVOEGEN</button></div>
+    <div class="form-group"><label class="form-label">Levering</label><div class="grid2"><button class="sel-btn" onclick="sel(this,'vk-levering','verzenden')">📦 Verzenden</button><button class="sel-btn" onclick="sel(this,'vk-levering','langsbrengen')">🚗 Langsbrengen</button><button class="sel-btn" onclick="sel(this,'vk-levering','festival')">🎪 Festival</button><button class="sel-btn" onclick="sel(this,'vk-levering','reserveren')">🔒 Reserveren</button><button class="sel-btn" onclick="sel(this,'vk-levering','intern')" style="grid-column:1/-1">🎽 Interne uitgifte</button></div></div>
     <div class="info-box" id="vk-vrzd-info" style="display:none">📦 Verzendkosten €<span id="vk-vrzd-amt">6,95</span> worden berekend bij afsluiten.</div>
-    <div class="form-group">
-      <label class="form-label">Betaling ontvangen?</label>
-      <div class="grid2">
-        <button class="sel-btn" onclick="sel(this,'vk-betaling','betaald')">✅ Betaald</button>
-        <button class="sel-btn" onclick="sel(this,'vk-betaling','onbetaald')">⏳ Nog betalen</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Notitie</label>
-      <input class="form-input" type="text" id="vk-notitie" placeholder="Adres, opmerking...">
-    </div>
+    <div class="form-group"><label class="form-label">Betaling ontvangen?</label><div class="grid2"><button class="sel-btn" onclick="sel(this,'vk-betaling','betaald')">✅ Betaald</button><button class="sel-btn" onclick="sel(this,'vk-betaling','onbetaald')">⏳ Nog betalen</button></div></div>
+    <div class="form-group"><label class="form-label">Notitie</label><input class="form-input" type="text" id="vk-notitie" placeholder="Adres, opmerking..."></div>
     <button class="btn-primary" onclick="saveVerkoop()">ORDER OPSLAAN</button>
   </div>
 </div>
@@ -532,37 +568,13 @@
     <button class="modal-close" onclick="closeModal('modal-ticket')">✕</button>
     <div class="modal-title" id="tick-modal-title">TICKETVERKOOP</div>
     <div class="info-box">🎟 Tickets hebben geen voorraad. Omzet wordt direct verwerkt in financieel.</div>
-    <div class="form-group">
-      <label class="form-label">Tickettype</label>
-      <input class="form-input" type="text" id="tick-type" placeholder="Bijv. Standaard, VIP...">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Aantal verkocht</label>
-      <input class="form-input" type="number" id="tick-aantal-inp" value="1" min="1">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Verkoopprijs per ticket (€)</label>
-      <input class="form-input" type="number" step="0.01" id="tick-prijs" value="40.00">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Inkoopkosten per ticket (€) — bijv. Tickable 0,32</label>
-      <input class="form-input" type="number" step="0.01" id="tick-inkoop" value="0.32">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Betaalstatus</label>
-      <div class="grid2">
-        <button class="sel-btn" onclick="sel(this,'tick-betaling','betaald')">✅ Betaald</button>
-        <button class="sel-btn" onclick="sel(this,'tick-betaling','onbetaald')">⏳ Verwacht</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Verkoopdatum</label>
-      <input class="form-input" type="date" id="tick-datum-input">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Notitie (optioneel)</label>
-      <input class="form-input" type="text" id="tick-notitie" placeholder="Bijv. kanaal, naam...">
-    </div>
+    <div class="form-group"><label class="form-label">Tickettype</label><input class="form-input" type="text" id="tick-type" placeholder="Bijv. Standaard, VIP..."></div>
+    <div class="form-group"><label class="form-label">Aantal verkocht</label><input class="form-input" type="number" id="tick-aantal-inp" value="1" min="1"></div>
+    <div class="form-group"><label class="form-label">Verkoopprijs per ticket (€)</label><input class="form-input" type="number" step="0.01" id="tick-prijs" value="40.00"></div>
+    <div class="form-group"><label class="form-label">Inkoopkosten per ticket (€) — bijv. Tickable 0,32</label><input class="form-input" type="number" step="0.01" id="tick-inkoop" value="0.32"></div>
+    <div class="form-group"><label class="form-label">Betaalstatus</label><div class="grid2"><button class="sel-btn" onclick="sel(this,'tick-betaling','betaald')">✅ Betaald</button><button class="sel-btn" onclick="sel(this,'tick-betaling','onbetaald')">⏳ Verwacht</button></div></div>
+    <div class="form-group"><label class="form-label">Verkoopdatum</label><input class="form-input" type="date" id="tick-datum-input"></div>
+    <div class="form-group"><label class="form-label">Notitie (optioneel)</label><input class="form-input" type="text" id="tick-notitie" placeholder="Bijv. kanaal, naam..."></div>
     <input type="hidden" id="tick-edit-id">
     <button class="btn-primary" onclick="saveTicket()">OPSLAAN</button>
   </div>
@@ -584,47 +596,106 @@
   <div class="modal">
     <button class="modal-close" onclick="closeModal('modal-product')">✕</button>
     <div class="modal-title" id="prod-modal-title">NIEUW PRODUCT</div>
-    <div class="form-group">
-      <label class="form-label">Naam</label>
-      <input class="form-input" type="text" id="prod-naam" placeholder="Bijv. Snapback Cap">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Type</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="prod-type-grid">
-        <button class="sel-btn" onclick="sel(this,'prod-type','merch')">🧢 Merchandise</button>
-        <button class="sel-btn" onclick="sel(this,'prod-type','consumable')">🍺 Consumable</button>
-        <button class="sel-btn" onclick="sel(this,'prod-type','service')">⚙️ Service</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Icoon (emoji)</label>
-      <input class="form-input" type="text" id="prod-icon" placeholder="🧢" maxlength="4">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Standaard inkoopprijs (€)</label>
-      <input class="form-input" type="number" step="0.01" id="prod-inkoop" value="0.00">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Standaard verkoopprijs (€)</label>
-      <input class="form-input" type="number" step="0.01" id="prod-verkoop" value="0.00">
-    </div>
-    <div class="form-group">
-      <label class="form-label">⚡ Waarschuw bij voorraad onder (stuks)</label>
-      <input class="form-input" type="number" id="prod-minstock" value="2" min="0">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Varianten</label>
-      <div id="prod-variants-wrap"></div>
-      <button class="btn-sec" style="width:100%;margin-top:6px" onclick="addVariant()">+ VARIANT</button>
-    </div>
+    <div class="form-group"><label class="form-label">Naam</label><input class="form-input" type="text" id="prod-naam" placeholder="Bijv. Snapback Cap"></div>
+    <div class="form-group"><label class="form-label">Type</label><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="prod-type-grid"><button class="sel-btn" onclick="sel(this,'prod-type','merch')">🧢 Merchandise</button><button class="sel-btn" onclick="sel(this,'prod-type','consumable')">🍺 Consumable</button><button class="sel-btn" onclick="sel(this,'prod-type','service')">⚙️ Service</button></div></div>
+    <div class="form-group"><label class="form-label">Icoon (emoji)</label><input class="form-input" type="text" id="prod-icon" placeholder="🧢" maxlength="4"></div>
+    <div class="form-group"><label class="form-label">Standaard inkoopprijs (€)</label><input class="form-input" type="number" step="0.01" id="prod-inkoop" value="0.00"></div>
+    <div class="form-group"><label class="form-label">Standaard verkoopprijs (€)</label><input class="form-input" type="number" step="0.01" id="prod-verkoop" value="0.00"></div>
+    <div class="form-group"><label class="form-label">⚡ Waarschuw bij voorraad onder (stuks)</label><input class="form-input" type="number" id="prod-minstock" value="2" min="0"></div>
+    <div class="form-group"><label class="form-label">Varianten</label><div id="prod-variants-wrap"></div><button class="btn-sec" style="width:100%;margin-top:6px" onclick="addVariant()">+ VARIANT</button></div>
     <input type="hidden" id="prod-edit-id">
     <button class="btn-primary" onclick="saveProduct()">OPSLAAN</button>
   </div>
 </div>
 
+<!-- MODAL: ARTIEST (LINEUP) -->
+<div class="modal-overlay" id="modal-artiest">
+  <div class="modal">
+    <button class="modal-close" onclick="closeLuModal('modal-artiest')">✕</button>
+    <div class="modal-title" id="modal-artiest-title">ARTIEST TOEVOEGEN</div>
+    <div class="form-group"><label class="form-label">Naam artiest *</label><input class="form-input" type="text" id="lu-naam" placeholder="Bijv. DJ Rob en MC Joe"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="form-group"><label class="form-label">Genre</label><input class="form-input" type="text" id="lu-genre" placeholder="Bijv. Old School"></div>
+      <div class="form-group"><label class="form-label">Land / Stad</label><input class="form-input" type="text" id="lu-locatie" placeholder="Bijv. Amsterdam"></div>
+      <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="lu-status"><option value="interesse">Geinteresseerd</option><option value="bevestigd">Bevestigd</option><option value="contract">Contract getekend</option><option value="geannuleerd">Geannuleerd</option></select></div>
+      <div class="form-group"><label class="form-label">Podium *</label><select class="form-select" id="lu-podium-sel"><option value="">Kies podium</option></select></div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin:10px 0;padding-top:10px">
+      <div class="card-title" style="font-size:13px;margin-bottom:8px">TIJDSLOT *</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div class="form-group"><label class="form-label">Opkomst</label><input class="form-input" type="time" id="lu-start"></div>
+        <div class="form-group"><label class="form-label">Einde</label><input class="form-input" type="time" id="lu-einde"></div>
+        <div class="form-group"><label class="form-label">Soundcheck</label><input class="form-input" type="time" id="lu-soundcheck"></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin:10px 0;padding-top:10px">
+      <div class="card-title" style="font-size:13px;margin-bottom:8px">GAGE</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div class="form-group"><label class="form-label">Gevraagd (EUR)</label><input class="form-input" type="number" id="lu-gage-gevraagd" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Onderhandeld (EUR)</label><input class="form-input" type="number" id="lu-gage-onderhandeld" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Betaalstatus</label><select class="form-select" id="lu-betaal-status"><option value="">Nog niet betaald</option><option value="aanbetaling">Aanbetaling gedaan</option><option value="volledig">Volledig betaald</option></select></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin:10px 0;padding-top:10px">
+      <div class="card-title" style="font-size:13px;margin-bottom:8px">CONTACT</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="form-group"><label class="form-label">Contactpersoon</label><input class="form-input" type="text" id="lu-contact" placeholder="Naam"></div>
+        <div class="form-group"><label class="form-label">E-mail</label><input class="form-input" type="email" id="lu-email" placeholder="email@voorbeeld.nl"></div>
+        <div class="form-group"><label class="form-label">Telefoon</label><input class="form-input" type="tel" id="lu-telefoon" placeholder="+31 6..."></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin:10px 0;padding-top:10px">
+      <div class="card-title" style="font-size:13px;margin-bottom:8px">TECHNISCHE RIDER</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="form-group"><label class="form-label">Aantal inputs (geluid)</label><input class="form-input" type="number" id="lu-inputs" placeholder="0" min="0"></div>
+        <div class="form-group"><label class="form-label">Backline nodig</label><select class="form-select" id="lu-backline"><option value="nee">Nee</option><option value="ja">Ja</option></select></div>
+        <div class="form-group"><label class="form-label">Eigen geluidstechnicus</label><select class="form-select" id="lu-eigen-tech"><option value="nee">Nee</option><option value="ja">Ja</option></select></div>
+        <div class="form-group"><label class="form-label">Lichtshow gewenst</label><select class="form-select" id="lu-licht"><option value="nee">Nee</option><option value="ja">Ja</option></select></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Overige technische wensen</label><input class="form-input" type="text" id="lu-tech-wensen" placeholder="Bijv. specifieke apparatuur..."></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin:10px 0;padding-top:10px">
+      <div class="card-title" style="font-size:13px;margin-bottom:8px">HOSPITALITY</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="form-group"><label class="form-label">Catering wensen</label><input class="form-input" type="text" id="lu-catering" placeholder="Bijv. vegetarisch"></div>
+        <div class="form-group"><label class="form-label">Personen in gezelschap</label><input class="form-input" type="number" id="lu-personen" placeholder="1" min="1"></div>
+        <div class="form-group"><label class="form-label">Hotel nodig</label><select class="form-select" id="lu-hotel"><option value="nee">Nee</option><option value="ja">Ja</option></select></div>
+        <div class="form-group"><label class="form-label">Parkeerpassen (aantal)</label><input class="form-input" type="number" id="lu-parkeer" placeholder="0" min="0"></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Groene kamer wensen</label><input class="form-input" type="text" id="lu-groene-kamer" placeholder="Bijv. riders, dranken..."></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin:10px 0;padding-top:10px">
+      <div class="card-title" style="font-size:13px;margin-bottom:8px">CONTRACT</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="form-group"><label class="form-label">Contractstatus</label><select class="form-select" id="lu-contract-status"><option value="niet">Niet verstuurd</option><option value="verstuurd">Verstuurd</option><option value="ondertekend">Ondertekend ontvangen</option></select></div>
+        <div class="form-group"><label class="form-label">Datum verstuurd</label><input class="form-input" type="date" id="lu-contract-verstuurd"></div>
+        <div class="form-group"><label class="form-label">Datum ontvangen</label><input class="form-input" type="date" id="lu-contract-ontvangen"></div>
+        <div class="form-group"><label class="form-label">Contract notitie</label><input class="form-input" type="text" id="lu-contract-notitie" placeholder="Bijv. voorwaarden..."></div>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Algemene notities</label><input class="form-input" type="text" id="lu-notitie" placeholder="Vrij tekstveld..."></div>
+    <input type="hidden" id="lu-edit-id">
+    <button class="btn-primary" onclick="saveArtiest()">OPSLAAN</button>
+  </div>
+</div>
+
+<!-- MODAL: PODIUM (LINEUP) -->
+<div class="modal-overlay" id="modal-podium">
+  <div class="modal">
+    <button class="modal-close" onclick="closeLuModal('modal-podium')">✕</button>
+    <div class="modal-title">PODIUM BEHEER</div>
+    <div class="form-group"><label class="form-label">Naam podium *</label><input class="form-input" type="text" id="lu-podium-naam" placeholder="Bijv. Mainstage"></div>
+    <div class="form-group"><label class="form-label">Beschrijving</label><input class="form-input" type="text" id="lu-podium-beschr" placeholder="Bijv. Buitenpodium, 500 personen"></div>
+    <button class="btn-primary" onclick="savePodium()">PODIUM TOEVOEGEN</button>
+    <div style="margin-top:16px" id="lu-podium-lijst"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
-<script>/*
+
+<script>
+/*
  * KSV Beheersysteem — Kerkwerve Summervibe 2026
  * Laatste update: 2026-04-05
  *
@@ -651,8 +722,10 @@
 // ════════════════════════════════════════════════════
 var KSV_BIN_ID = '69d2b27436566621a8805757';
 var KSV_API_KEY = '$2a$10$DTMyywKe.kvN4KogAjdplOF.RUZozano.ux1fdpexn0pop5X5iJa6';
-var _syncing = false;
+var _syncSaving = false;
 var _syncTimeout = null;
+var _pollInterval = null;
+var POLL_MS = 15000; // elke 15 seconden cloud checken
 
 function updateSyncStatus(state){
   var el=document.getElementById('sync-status');if(!el)return;
@@ -667,16 +740,33 @@ function updateSyncStatus(state){
   el.textContent=st.tekst;el.style.color=st.kleur;
 }
 
-function syncLaden(){
-  if(_syncing)return;
-  _syncing=true;
+function _applyCloudData(cloud){
+  // Valideer: cloud moet minimaal producten hebben
+  if(!cloud||!cloud.producten)return false;
+  var cloudTs=cloud._lastSaved||0;
+  var lokaalTs=S._lastSaved||0;
+  // Alleen overschrijven als cloud nieuwer is
+  if(cloudTs<=lokaalTs)return false;
+  S=cloud;
+  if(!S.ticketVerkopen)S.ticketVerkopen=[];
+  if(!S.settings)S.settings={verzend:6.95};
+  if(!S.lineup)S.lineup={artiesten:[],podia:[]};
+  if(!S.lineup.artiesten)S.lineup.artiesten=[];
+  if(!S.lineup.podia)S.lineup.podia=[];
+  S.producten.forEach(function(p){if(!p.type)p.type='merch';if(!p.minStock)p.minStock=2;});
+  localStorage.setItem('ksv3',JSON.stringify(S));
+  return true;
+}
+
+function syncLaden(isInit){
+  // isInit=true: altijd laden (bij opstarten), ook als cloud ouder lijkt
   updateSyncStatus('laden');
   fetch('https://api.jsonbin.io/v3/b/'+KSV_BIN_ID+'/latest',{
     method:'GET',
     mode:'cors',
     headers:{
       'X-Master-Key':KSV_API_KEY,
-      'X-Bin-Meta':false
+      'X-Bin-Meta':'false'
     }
   })
   .then(function(res){
@@ -688,24 +778,30 @@ function syncLaden(){
       var cloud=data.record;
       var cloudTs=cloud._lastSaved||0;
       var lokaalTs=S._lastSaved||0;
-      // Laad cloud als cloud nieuwer is dan lokaal, of lokaal leeg is
-      if(cloudTs>=lokaalTs||S.verkoopOrders.length===0){
+      var shouldApply=isInit?(cloudTs>=lokaalTs||!lokaalTs):_applyCloudData(cloud);
+      if(isInit&&cloudTs>=lokaalTs){
         S=cloud;
         if(!S.ticketVerkopen)S.ticketVerkopen=[];
         if(!S.settings)S.settings={verzend:6.95};
+        if(!S.lineup)S.lineup={artiesten:[],podia:[]};
+        if(!S.lineup.artiesten)S.lineup.artiesten=[];
+        if(!S.lineup.podia)S.lineup.podia=[];
         S.producten.forEach(function(p){if(!p.type)p.type='merch';if(!p.minStock)p.minStock=2;});
         localStorage.setItem('ksv3',JSON.stringify(S));
-        renderDashboard();
-        updateLandingStats();
+        renderAll();
+      } else if(!isInit){
+        var changed=_applyCloudData(cloud);
+        if(changed){
+          renderAll();
+          showToast('☁️ GESYNCHRONISEERD');
+        }
       }
     }
     updateSyncStatus('ok');
-    _syncing=false;
   })
   .catch(function(err){
     console.warn('syncLaden fout:',err.message);
     updateSyncStatus('fout');
-    _syncing=false;
   });
 }
 
@@ -713,6 +809,8 @@ function syncOpslaan(){
   // Debounce: wacht 1.5s na laatste save() aanroep
   if(_syncTimeout)clearTimeout(_syncTimeout);
   _syncTimeout=setTimeout(function(){
+    if(_syncSaving)return;
+    _syncSaving=true;
     updateSyncStatus('opslaan');
     fetch('https://api.jsonbin.io/v3/b/'+KSV_BIN_ID,{
       method:'PUT',
@@ -729,18 +827,67 @@ function syncOpslaan(){
     })
     .then(function(){
       updateSyncStatus('ok');
-      _syncing=false;
+      _syncSaving=false;
     })
     .catch(function(err){
       console.warn('syncOpslaan fout:',err.message);
       updateSyncStatus('fout');
-      _syncing=false;
+      _syncSaving=false;
     });
   },1500);
 }
 
+function startPolling(){
+  // Stop bestaande poller
+  if(_pollInterval)clearInterval(_pollInterval);
+  // Poll elke POLL_MS milliseconden
+  _pollInterval=setInterval(function(){
+    // Niet pollen als we bezig zijn met opslaan (race condition)
+    if(_syncSaving)return;
+    syncLaden(false);
+  },POLL_MS);
+}
 
-var _syncing = false;// ════════════════════════════════════════════════════
+// Herstart polling als pagina weer zichtbaar wordt (gebruiker switcht tab/scherm)
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'){
+    // Direct checken + polling herstarten
+    if(!_syncSaving)syncLaden(false);
+    startPolling();
+  } else {
+    if(_pollInterval)clearInterval(_pollInterval);
+  }
+});
+
+// Sync bij netwerkverbinding herstel
+window.addEventListener('online',function(){
+  showToast('VERBINDING HERSTELD — SYNC...');
+  syncLaden(false);
+  startPolling();
+});
+window.addEventListener('offline',function(){
+  updateSyncStatus('fout');
+  if(_pollInterval)clearInterval(_pollInterval);
+});
+
+function renderAll(){
+  try{renderDashboard();}catch(e){}
+  try{updateLandingStats();}catch(e){}
+  // Herrender actieve tab
+  var active=document.querySelector('.content.active');
+  if(!active)return;
+  var id=active.id;
+  var map={
+    'tab-dashboard':renderDashboard,'tab-financieel':renderFinancieel,
+    'tab-voorraad':renderVoorraad,'tab-overzicht':renderOverzicht,
+    'tab-verkoop':renderVerkoop,'tab-inkoop':renderInkoop,
+    'tab-tickets':renderTickets,'tab-lineup':renderLineup,
+    'tab-afgerond':renderAfgerond,'tab-producten':renderProducten
+  };
+  if(map[id]&&id!=='tab-dashboard')try{map[id]();}catch(e){}
+}
+
+// ════════════════════════════════════════════════════
 // STATE & STORAGE
 // ════════════════════════════════════════════════════
 var S = {
@@ -757,6 +904,7 @@ var S = {
   inkoopOrders:[],
   verkoopOrders:[],
   ticketVerkopen:[],
+  lineup:{artiesten:[],podia:[]},
   settings:{verzend:6.95}
 };
 
@@ -773,8 +921,25 @@ function load(){
       S=JSON.parse(r);
       if(!S.ticketVerkopen)S.ticketVerkopen=[];
       if(!S.settings)S.settings={verzend:6.95};
+      if(!S.lineup)S.lineup={artiesten:[],podia:[]};
       S.producten.forEach(function(p){if(!p.type)p.type='merch';if(!p.minStock)p.minStock=2;});
     }
+    // Migreer oude 'lineup' localStorage key naar S.lineup
+    try{
+      var oldLu=localStorage.getItem('lineup');
+      if(oldLu){
+        var parsed=JSON.parse(oldLu);
+        if(parsed&&(parsed.artiesten||parsed.podia)){
+          if(!S.lineup||!S.lineup.artiesten||!S.lineup.artiesten.length){
+            S.lineup=parsed;
+            if(!S.lineup.artiesten)S.lineup.artiesten=[];
+            if(!S.lineup.podia)S.lineup.podia=[];
+            localStorage.removeItem('lineup');
+            save();
+          }
+        }
+      }
+    }catch(ex){}
   }catch(e){}
 }
 
@@ -826,19 +991,30 @@ function getOrderItems(o){
   return [{prodId:o.prodId,variantId:o.variantId,aantal:o.aantal||1,prijs:o.prijs}];
 }
 
-var STATUS_LBL={nieuw:'🆕 NIEUW',ingepakt:'📦 INGEPAKT',verzonden:'✅ VERZONDEN',langsbrengen:'🚗 LANGSBRENGEN',festival:'🎪 FESTIVAL',reserveren:'🔒 RESERVEREN',afgeleverd:'✅ AFGELEVERD'};
-var STATUS_TAG={nieuw:'tag-blue',ingepakt:'tag-orange',verzonden:'tag-green',langsbrengen:'tag-green',festival:'tag-accent',reserveren:'tag-orange',afgeleverd:'tag-green'};
+// [NIEUW] 'intern' toegevoegd aan labels en tags
+var STATUS_LBL={nieuw:'🆕 NIEUW',ingepakt:'📦 INGEPAKT',verzonden:'✅ VERZONDEN',langsbrengen:'🚗 LANGSBRENGEN',festival:'🎪 FESTIVAL',reserveren:'🔒 RESERVEREN',afgeleverd:'✅ AFGELEVERD',intern:'🎽 INTERN'};
+var STATUS_TAG={nieuw:'tag-blue',ingepakt:'tag-orange',verzonden:'tag-green',langsbrengen:'tag-green',festival:'tag-accent',reserveren:'tag-orange',afgeleverd:'tag-green',intern:'tag-blue'};
 
 // ════════════════════════════════════════════════════
 // LANDING PAGE
 // ════════════════════════════════════════════════════
 function calcKPIs(){
   var omzetMerch=0,omzetTicket=0,inkoopMerch=0,inkoopCons=0,inkoopServ=0,inkoopTicketKosten=0;
+  // [NIEUW] Interne uitgiftes: aparte teller voor inkoopkosten
+  var inkoopIntern=0;
   var openOmzet=0,openTicket=0,openInkoop=0;
 
-  S.verkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
+  // [GEWIJZIGD] Interne uitgiftes worden uitgesloten van omzet
+  S.verkoopOrders.filter(function(o){return o.betaling==='betaald'&&o.levering!=='intern';}).forEach(function(o){
     getOrderItems(o).forEach(function(i){
       omzetMerch+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?getProd(i.prodId).verkoop:0));
+    });
+  });
+  // [NIEUW] Inkoopkosten van interne uitgiftes apart berekenen
+  S.verkoopOrders.filter(function(o){return o.levering==='intern'&&o.gesloten;}).forEach(function(o){
+    getOrderItems(o).forEach(function(i){
+      var p=getProd(i.prodId);
+      inkoopIntern+=(i.aantal||1)*(p?p.inkoop:0);
     });
   });
   S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).forEach(function(t){
@@ -854,6 +1030,8 @@ function calcKPIs(){
     });
   });
   inkoopServ+=inkoopTicketKosten;
+  // [NIEUW] Interne uitgifte inkoopkosten optellen bij services
+  inkoopServ+=inkoopIntern;
 
   var retourCredit=0;
   S.producten.filter(isConsumable).forEach(function(prod){
@@ -866,12 +1044,20 @@ function calcKPIs(){
     });
   });
 
+  var inkoopArtiesten=0;
+  var _LU=loadLineup();
+  _LU.artiesten.filter(function(a){return (a.status==='bevestigd'||a.status==='contract');}).forEach(function(a){
+    var gage=parseFloat(a.gageOnderhandeld||a.gageGevraagd||0);
+    if(a.betaalStatus==='volledig')inkoopArtiesten+=gage;
+    else if(a.betaalStatus==='aanbetaling')inkoopArtiesten+=gage*0.5;
+  });
   var totaalOmzet=omzetMerch+omzetTicket;
-  var totaalKosten=inkoopMerch+inkoopCons+inkoopServ-retourCredit;
+  var totaalKosten=inkoopMerch+inkoopCons+inkoopServ+inkoopArtiesten-retourCredit;
   var winst=totaalOmzet-totaalKosten;
   var openOrders=S.verkoopOrders.filter(function(o){return !o.gesloten;}).length;
 
-  S.verkoopOrders.filter(function(o){return !o.gesloten&&o.betaling!=='betaald';}).forEach(function(o){
+  // [GEWIJZIGD] intern uitgesloten van verwachte omzet
+  S.verkoopOrders.filter(function(o){return !o.gesloten&&o.betaling!=='betaald'&&o.levering!=='intern';}).forEach(function(o){
     getOrderItems(o).forEach(function(i){
       openOmzet+=(i.aantal||1)*((i.prijs!=null)?i.prijs:(getProd(i.prodId)?getProd(i.prodId).verkoop:0));
     });
@@ -884,7 +1070,9 @@ function calcKPIs(){
   return {
     omzetMerch:omzetMerch, omzetTicket:omzetTicket,
     totaalOmzet:totaalOmzet, inkoopMerch:inkoopMerch,
-    inkoopCons:inkoopCons, inkoopServ:inkoopServ,
+    inkoopCons:inkoopCons, inkoopServ:inkoopServ, inkoopArtiesten:inkoopArtiesten,
+    // [NIEUW] inkoopIntern apart teruggeven voor weergave in financieel
+    inkoopIntern:inkoopIntern,
     retourCredit:retourCredit, totaalKosten:totaalKosten,
     winst:winst, openOrders:openOrders,
     openOmzet:openOmzet, openTicket:openTicket, openInkoop:openInkoop
@@ -923,7 +1111,7 @@ function hideLanding(tab){
 // ════════════════════════════════════════════════════
 // TABS
 // ════════════════════════════════════════════════════
-var TAB_NAMES=['dashboard','financieel','voorraad','overzicht','verkoop','inkoop','tickets','afgerond','producten'];
+var TAB_NAMES=['dashboard','financieel','voorraad','overzicht','verkoop','inkoop','tickets','lineup','afgerond','producten'];
 function showTab(name){
   document.querySelectorAll('.content').forEach(function(c){c.classList.remove('active');});
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
@@ -944,8 +1132,10 @@ function showTab(name){
 var _sel={};
 function openModal(id){
   if(id==='modal-inkoop')prepInkoop();
-  if(id==='modal-verkoop')prepVerkoop();
-  if(id==='modal-product')prepProduct();
+  // Alleen prepVerkoop aanroepen bij nieuw order, NIET bij edit
+  if(id==='modal-verkoop'&&!_editVkId)prepVerkoop();
+  // Alleen prepProduct aanroepen bij nieuw product, NIET bij edit
+  if(id==='modal-product'&&!_editProdId)prepProduct();
   if(id==='modal-ticket')prepTicket();
   if(id==='modal-afboek')prepAfboek();
   var el=document.getElementById(id);
@@ -955,6 +1145,7 @@ function closeModal(id){
   var el=document.getElementById(id);
   if(el)el.classList.remove('open');
   if(id==='modal-verkoop'){_editVkId=null;window._skipZeroWarn=false;}
+  if(id==='modal-product'){_editProdId=null;}
 }
 // Klik buiten modal sluit hem — FIX bug #9
 ['modal-inkoop','modal-verkoop','modal-product','modal-ticket','modal-afboek'].forEach(function(id){
@@ -987,6 +1178,175 @@ function showToast(msg){
 // ════════════════════════════════════════════════════
 // DASHBOARD
 // ════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
+// GRAFIEKEN — pure SVG, geen externe dependencies
+// ════════════════════════════════════════════════════
+
+function renderDonut(omzet, kosten, winst){
+  var svg=document.getElementById('dash-donut');
+  var leg=document.getElementById('dash-donut-legend');
+  if(!svg||!leg)return;
+
+  // Geen data: lege staat
+  if(omzet<=0&&kosten<=0){
+    svg.innerHTML='<circle cx="60" cy="60" r="46" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="16"/>'
+      +'<text x="60" y="64" text-anchor="middle" font-size="9" fill="rgba(245,240,232,0.3)" font-family="Space Mono,monospace">GEEN DATA</text>';
+    leg.innerHTML='';
+    return;
+  }
+
+  // Segmenten: omzet (geel), kosten (rood), winst (groen)
+  // Donut = verdeling van totaalOmzet gesplitst in kosten + winst
+  // Als verlies: omzet + verlies-overschot apart tonen
+  var segmenten=[];
+  var totaal=Math.max(omzet, kosten); // grootste waarde = volledig rond
+
+  if(omzet>0){
+    var winstVal=Math.max(0,winst);
+    var kostenVal=Math.min(kosten,omzet);
+    segmenten.push({val:kostenVal, kleur:'#f87171', label:'Kosten'}); // rood
+    segmenten.push({val:winstVal,  kleur:'#4ade80', label:'Winst'});  // groen
+    if(kosten>omzet){
+      // Verlies: extra segment boven omzet
+      segmenten.push({val:kosten-omzet, kleur:'#f8717188', label:'Verlies'});
+      totaal=kosten;
+    }
+  }
+
+  var R=46; var r=30; var cx=60; var cy=60;
+  var tau=2*Math.PI;
+  var hoek=-Math.PI/2; // start bovenaan
+
+  function polarNaarXY(angle, radius){
+    return [cx+radius*Math.cos(angle), cy+radius*Math.sin(angle)];
+  }
+  function boogPad(startH, eindH, R, r){
+    var x1=polarNaarXY(startH,R), x2=polarNaarXY(eindH,R);
+    var x3=polarNaarXY(eindH,r), x4=polarNaarXY(startH,r);
+    var groot=eindH-startH>Math.PI?1:0;
+    return 'M'+x1[0]+' '+x1[1]
+      +' A'+R+' '+R+' 0 '+groot+' 1 '+x2[0]+' '+x2[1]
+      +' L'+x3[0]+' '+x3[1]
+      +' A'+r+' '+r+' 0 '+groot+' 0 '+x4[0]+' '+x4[1]+'Z';
+  }
+
+  var paden='';
+  var sommatie=segmenten.reduce(function(s,g){return s+g.val;},0);
+  if(sommatie<=0){
+    svg.innerHTML='<circle cx="60" cy="60" r="46" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="16"/>'
+      +'<text x="60" y="64" text-anchor="middle" font-size="9" fill="rgba(245,240,232,0.3)" font-family="Space Mono,monospace">€0</text>';
+    leg.innerHTML='';
+    return;
+  }
+
+  segmenten.forEach(function(g){
+    var sweep=(g.val/totaal)*tau;
+    if(sweep<0.01)return;
+    var eindH=hoek+sweep;
+    paden+='<path d="'+boogPad(hoek,eindH,R,r)+'" fill="'+g.kleur+'" opacity="0.9"/>';
+    hoek=eindH;
+  });
+
+  // Midden: winstpercentage of verlies
+  var midLabel=omzet>0?Math.round((winst/omzet)*100)+'%':'—';
+  var midKleur=winst>=0?'#4ade80':'#f87171';
+  paden+='<text x="60" y="57" text-anchor="middle" font-size="14" font-weight="bold" fill="'+midKleur+'" font-family="Bebas Neue,Impact,sans-serif">'+midLabel+'</text>';
+  paden+='<text x="60" y="68" text-anchor="middle" font-size="7" fill="rgba(245,240,232,0.4)" font-family="Space Mono,monospace">'+(winst>=0?'MARGE':'VERLIES')+'</text>';
+
+  svg.innerHTML=paden;
+
+  // Legenda
+  var legendaItems=[
+    {kleur:'#ffdd00', label:'Omzet',  waarde:omzet},
+    {kleur:'#f87171', label:'Kosten', waarde:kosten},
+    {kleur:'#4ade80', label:'Winst',  waarde:winst}
+  ];
+  leg.innerHTML=legendaItems.map(function(l){
+    return '<div style="display:flex;align-items:center;gap:5px;white-space:nowrap">'
+      +'<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+l.kleur+';flex-shrink:0"></span>'
+      +'<span style="color:rgba(245,240,232,0.5)">'+l.label+'</span>'
+      +'<span style="font-family:\'Bebas Neue\',sans-serif;font-size:12px;color:rgba(245,240,232,0.9)">'+fmt(l.waarde)+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+function renderMerchBar(){
+  var svg=document.getElementById('dash-bar');
+  if(!svg)return;
+
+  // Bereken winst per product (alleen merch, betaalde orders, excl intern)
+  var producten=[];
+  S.producten.filter(isMerch).forEach(function(prod){
+    var verkocht=0; var omzetP=0; var inkoopP=0;
+    S.verkoopOrders.filter(function(o){return o.betaling==='betaald'&&o.levering!=='intern';}).forEach(function(o){
+      getOrderItems(o).forEach(function(i){
+        if(i.prodId!==prod.id)return;
+        var pr=(i.prijs!=null)?i.prijs:prod.verkoop;
+        verkocht+=(i.aantal||1);
+        omzetP+=(i.aantal||1)*pr;
+        inkoopP+=(i.aantal||1)*prod.inkoop;
+      });
+    });
+    if(verkocht>0||omzetP>0){
+      producten.push({naam:prod.naam, winst:omzetP-inkoopP, omzet:omzetP, verkocht:verkocht, icon:prod.icon||'📦'});
+    }
+  });
+
+  if(!producten.length){
+    svg.setAttribute('height','48');
+    svg.innerHTML='<text x="50%" y="30" text-anchor="middle" font-size="9" fill="rgba(245,240,232,0.3)" font-family="Space Mono,monospace">Nog geen verkopen</text>';
+    return;
+  }
+
+  // Sorteer op winst aflopend, max 6
+  producten.sort(function(a,b){return b.winst-a.winst;});
+  var top=producten.slice(0,6);
+
+  var BAR_H=18; var BAR_GAP=6; var LABEL_W=72; var WAARDE_W=48; var PAD=4;
+  var maxWinst=Math.max.apply(null, top.map(function(p){return Math.abs(p.winst);}));
+  var svgH=(BAR_H+BAR_GAP)*top.length+PAD;
+  svg.setAttribute('height', svgH);
+
+  // Bereken beschikbare breedte via viewBox
+  var VW=260; // logische breedte
+  svg.setAttribute('viewBox','0 0 '+VW+' '+svgH);
+  svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+
+  var BAR_MAX=VW-LABEL_W-WAARDE_W-8;
+
+  var html='';
+  top.forEach(function(p, i){
+    var y=i*(BAR_H+BAR_GAP)+PAD;
+    var barW=maxWinst>0?Math.max(2,Math.abs(p.winst)/maxWinst*BAR_MAX):2;
+    var kleur=p.winst>=0?'#4ade80':'#f87171';
+    var naam=p.naam.length>9?p.naam.slice(0,8)+'…':p.naam;
+
+    // Label links
+    html+='<text x="'+(LABEL_W-4)+'" y="'+(y+BAR_H*0.72)+'" text-anchor="end"'
+      +' font-size="9" fill="rgba(245,240,232,0.6)" font-family="Space Mono,monospace">'+escHtml(naam)+'</text>';
+
+    // Balk
+    html+='<rect x="'+LABEL_W+'" y="'+(y+2)+'" width="'+barW+'" height="'+(BAR_H-4)+'"'
+      +' fill="'+kleur+'" opacity="0.85" rx="2"/>';
+
+    // Waarde rechts van balk
+    var winstStr=(p.winst>=0?'+':'')+fmt(p.winst);
+    html+='<text x="'+(LABEL_W+barW+4)+'" y="'+(y+BAR_H*0.72)+'"'
+      +' font-size="9" fill="'+kleur+'" font-family="\'Bebas Neue\',Impact,sans-serif" font-size="11">'+winstStr+'</text>';
+
+    // Verkocht sub-label
+    html+='<text x="'+(LABEL_W+barW+4)+'" y="'+(y+BAR_H-1)+'"'
+      +' font-size="7" fill="rgba(245,240,232,0.3)" font-family="Space Mono,monospace">'+p.verkocht+' verk.</text>';
+  });
+
+  svg.innerHTML=html;
+}
+
+function renderGrafieken(kpi){
+  renderDonut(kpi.totaalOmzet, kpi.totaalKosten, kpi.winst);
+  renderMerchBar();
+}
+
 function renderDashboard(){
   var kpi=calcKPIs();
   var totStock=0;
@@ -1077,6 +1437,9 @@ function renderDashboard(){
   }
 
   renderDashOpenOrders();
+
+  // Grafieken updaten met actuele KPI data
+  renderGrafieken(kpi);
 }
 
 function renderDashOpenOrders(){
@@ -1220,7 +1583,8 @@ function orderCard(o,closed){
   });
   var winst=totOmzet-totInkoop;
   var betalingOk=o.betaling==='betaald';
-  var geleverd=o.gesloten||['verzonden','afgeleverd'].indexOf(o.status)>-1;
+  // [GEWIJZIGD] intern toegevoegd aan geleverd-check
+  var geleverd=o.gesloten||['verzonden','afgeleverd','intern'].indexOf(o.status)>-1;
   var itemTags=items.map(function(i){
     var p=getProd(i.prodId);var v=getVar(p,i.variantId);
     var kleur=v?v.kleur:'#555';
@@ -1233,8 +1597,17 @@ function orderCard(o,closed){
   html+='<span class="tag '+(betalingOk?'tag-green':'tag-orange')+'">'+(betalingOk?'💰 BETAALD':'⏳ OPEN')+'</span>';
   html+='<span class="tag '+(geleverd?'tag-green':'tag-orange')+'">'+(geleverd?'✅ GELEVERD':'🕐 TE LEVEREN')+'</span></div>';
   if(o.notitie)html+='<div style="font-size:10px;color:var(--muted);margin-bottom:8px">'+escHtml(o.notitie)+'</div>';
-  html+='<div class="order-fin"><div><div style="font-size:9px;color:var(--muted)">WINST</div><div class="order-winst'+(winst<0?' neg':'')+'">'+fmt(winst)+'</div></div>';
-  html+='<div style="text-align:right;font-size:10px;color:var(--muted)"><div>Omzet: '+fmt(totOmzet)+'</div><div>Inkoop: −'+fmt(totInkoop)+'</div></div></div>';
+  // [NIEUW - PROBLEEM 1] Waarschuwing als verkoopprijs onder inkoopprijs ligt
+  if(o.onderprijs)html+='<div style="font-size:10px;color:var(--orange);margin-bottom:8px;padding:5px 8px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.2);border-radius:2px">⚠️ Verkoopprijs ligt onder inkoopprijs</div>';
+  // [NIEUW] Interne uitgifte: toon inkoopkosten als last i.p.v. winst
+  if(o.levering==='intern'){
+    html+='<div class="order-fin"><div><div style="font-size:9px;color:var(--muted)">INKOOPKOSTEN</div>'
+      +'<div style="font-family:var(--fd);font-size:17px;color:var(--red)">−'+fmt(totInkoop)+'</div></div>'
+      +'<div style="text-align:right;font-size:10px;color:var(--muted)"><div>🎽 Interne uitgifte</div><div>Telt niet mee in omzet</div></div></div>';
+  } else {
+    html+='<div class="order-fin"><div><div style="font-size:9px;color:var(--muted)">WINST</div><div class="order-winst'+(winst<0?' neg':'')+'">'+fmt(winst)+'</div></div>';
+    html+='<div style="text-align:right;font-size:10px;color:var(--muted)"><div>Omzet: '+fmt(totOmzet)+'</div><div>Inkoop: −'+fmt(totInkoop)+'</div></div></div>';
+  }
   if(!closed){
     html+='<div class="order-actions">';
     html+='<button class="btn-sec '+(betalingOk?'btn-green':'btn-orange')+'" data-actie="betalen" onclick="vkActie(this)">'+(betalingOk?'💰 BETAALD':'⏳ BETALEN')+'</button>';
@@ -1367,18 +1740,64 @@ function renderFinancieel(){
   sd('fin-inkoop-cons','−'+fmt(k.inkoopCons));
   sd('fin-retour-cons','+'+fmt(k.retourCredit));
   sd('fin-inkoop-serv','−'+fmt(k.inkoopServ));
+  // [NIEUW] Interne uitgifte inkoopkosten tonen
+  sd('fin-inkoop-intern','−'+fmt(k.inkoopIntern||0));
+  sd('fin-inkoop-artiesten','−'+fmt(k.inkoopArtiesten||0));
   sd('fin-inkoop','−'+fmt(k.totaalKosten));
   sd('fin-open-omzet',fmt(k.openOmzet));
   sd('fin-open-ticket',fmt(k.openTicket));
   sd('fin-inkoop-open',fmt(k.openInkoop));
 
-  renderConsumablesOverzicht();
+  function renderConsumablesOverzicht(){
+  var wrap=document.getElementById('fin-consumables-wrap');if(!wrap)return;
+  var html='';
+  var cons=S.producten.filter(isConsumable);
+  if(!cons.length){wrap.innerHTML='<div style="font-size:11px;color:var(--muted)">Geen consumables.</div>';return;}
+  cons.forEach(function(prod){
+    (prod.varianten&&prod.varianten.length?prod.varianten:[{id:null,naam:'Standaard',kleur:'#555'}]).forEach(function(v){
+      var stock=getStock(prod.id,v.id);
+      var verb=getVerbruikt(prod.id,v.id);
+      var retour=Math.max(0,stock-verb);
+      html+='<div class="stat-row"><span class="stat-label">'+(prod.icon||'🍺')+' '+escHtml(prod.naam)+' '+escHtml(v.naam)+'</span>';
+      html+='<span style="text-align:right;font-size:11px;color:var(--muted)">'+verb+' verbruikt &nbsp;|&nbsp; '+retour+' retour &nbsp;';
+      html+='<span style="font-family:var(--fd);font-size:16px;color:var(--red)">'+fmt(verb*prod.inkoop)+'</span></span></div>';
+    });
+  });
+  wrap.innerHTML=html;
+}
+
+renderConsumablesOverzicht();
+
+  // [NIEUW] Interne uitgiftes sectie renderen
+  var internWrap=document.getElementById('fin-intern-wrap');
+  if(internWrap){
+    var internOrders=S.verkoopOrders.filter(function(o){return o.levering==='intern';});
+    if(!internOrders.length){
+      internWrap.innerHTML='<div class="empty" style="padding:8px;font-size:11px">Geen interne uitgiftes</div>';
+    } else {
+      var iHtml='';
+      internOrders.forEach(function(o){
+        var oItems=getOrderItems(o);
+        var totInkoop=0;
+        oItems.forEach(function(i){var p=getProd(i.prodId);totInkoop+=(i.aantal||1)*(p?p.inkoop:0);});
+        var itemLabel=oItems.map(function(i){
+          var p=getProd(i.prodId);var v=getVar(p,i.variantId);
+          return (i.aantal>1?i.aantal+'x ':'')+( p?escHtml(p.naam):i.prodId)+(v?' '+escHtml(v.naam):'');
+        }).join(', ');
+        iHtml+='<div class="stat-row"><span class="stat-label">🎽 '+escHtml(o.naam)
+          +'<br><span style="font-size:9px;color:var(--muted)">'+itemLabel+'</span></span>'
+          +'<span style="font-family:var(--fd);font-size:15px;color:var(--red)">−'+fmt(totInkoop)+'</span></div>';
+      });
+      internWrap.innerHTML=iHtml;
+    }
+  }
 
   var pp=document.getElementById('fin-per-product');
   if(pp){
     pp.innerHTML=S.producten.map(function(prod){
       var ppN=0,ppW=0;
-      S.verkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
+      // [GEWIJZIGD] intern uitgesloten van winst per product
+      S.verkoopOrders.filter(function(o){return o.betaling==='betaald'&&o.levering!=='intern';}).forEach(function(o){
         getOrderItems(o).forEach(function(i){
           if(i.prodId===prod.id){
             var pr=(i.prijs!=null)?i.prijs:prod.verkoop;
@@ -1609,11 +2028,23 @@ function saveVerkoop(){
   if(!items.length){showToast('MINIMAAL 1 ARTIKEL');return;}
   // Validatie: geen negatieve prijzen
   if(items.some(function(i){return i.prijs<0;})){showToast('PRIJS MAG NIET NEGATIEF ZIJN');return;}
-  // Waarschuwing €0 prijs
-  if(items.some(function(i){return (i.prijs||0)===0;})&&!window._skipZeroWarn){
-    window._skipZeroWarn=true;showToast('⚠️ Prijs is €0,00 — klik nogmaals om te bevestigen');return;
+
+  // [NIEUW - PROBLEEM 1] Validatie €0 prijs: bevestigingsdialoog i.p.v. dubbel-klik-hack
+  if(levering!=='intern'&&items.some(function(i){return (i.prijs||0)===0;})){
+    if(!confirm('Je verkoopt dit artikel voor \u20AC0,00. Weet je zeker dat dit correct is?\n(bijv. voor een vrijwilligers- of interne uitgifte)\n\nKlik OK om op te slaan als interne uitgifte, of Annuleren om terug te gaan.')){
+      return;
+    }
   }
   window._skipZeroWarn=false;
+
+  // [NIEUW - PROBLEEM 1] Waarschuwing onder inkoopprijs wordt opgeslagen als notitie-vlag op de order
+  // (de visuele waarschuwing wordt getoond in orderCard)
+  var heeftOnderprijsItem=items.some(function(i){
+    var p=getProd(i.prodId);
+    return p&&(i.prijs||0)>0&&(i.prijs||0)<p.inkoop;
+  });
+
+  // [GEWIJZIGD] intern toegevoegd aan status-bepaling; intern gaat direct voorraad afboeken
   var directAfboeken=levering!=='reserveren';
   if(directAfboeken){
     var stockErr=null;
@@ -1625,76 +2056,84 @@ function saveVerkoop(){
     if(stockErr){showToast(stockErr);return;}
     items.forEach(function(i){addStock(i.prodId,i.variantId||null,-i.aantal);});
   }
-  var status=levering==='reserveren'?'reserveren':levering==='verzenden'?'ingepakt':levering==='langsbrengen'?'langsbrengen':'festival';
+  // [GEWIJZIGD] intern toegevoegd aan status-mapping
+  var status=levering==='reserveren'?'reserveren':levering==='intern'?'intern':levering==='verzenden'?'ingepakt':levering==='langsbrengen'?'langsbrengen':'festival';
   if(_editVkId){
     var ei=S.verkoopOrders.findIndex(function(x){return x.id===_editVkId;});
     var bestaand=S.verkoopOrders[ei];
     if(bestaand&&bestaand.voorraadAfgeboekt)getOrderItems(bestaand).forEach(function(i){addStock(i.prodId,i.variantId||null,i.aantal||1);});
     S.verkoopOrders=S.verkoopOrders.filter(function(x){return x.id!==_editVkId;});
-    S.verkoopOrders.splice(Math.max(0,ei),0,{id:_editVkId,naam:naam,items:items,prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,levering:levering,betaling:betaling,status:status,datum:bestaand?bestaand.datum:todayDisplay(),notitie:notitie,gesloten:false,voorraadAfgeboekt:directAfboeken});
+    // [NIEUW] heeftOnderprijsItem opgeslagen op order object
+    S.verkoopOrders.splice(Math.max(0,ei),0,{id:_editVkId,naam:naam,items:items,prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,levering:levering,betaling:betaling,status:status,datum:bestaand?bestaand.datum:todayDisplay(),notitie:notitie,gesloten:false,voorraadAfgeboekt:directAfboeken,onderprijs:heeftOnderprijsItem});
     _editVkId=null;
   } else {
-    S.verkoopOrders.push({id:uid(),naam:naam,items:items,prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,levering:levering,betaling:betaling,status:status,datum:todayDisplay(),notitie:notitie,gesloten:false,voorraadAfgeboekt:directAfboeken});
+    // [NIEUW] heeftOnderprijsItem opgeslagen op order object
+    S.verkoopOrders.push({id:uid(),naam:naam,items:items,prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,levering:levering,betaling:betaling,status:status,datum:todayDisplay(),notitie:notitie,gesloten:false,voorraadAfgeboekt:directAfboeken,onderprijs:heeftOnderprijsItem});
   }
-  save();closeModal('modal-verkoop');renderVerkoop();renderVoorraad();renderDashboard();renderFinancieel();showToast(_editVkId?'ORDER BIJGEWERKT':'ORDER OPGESLAGEN');
+  save();closeModal('modal-verkoop');renderVerkoop();renderVoorraad();renderDashboard();renderFinancieel();showToast('ORDER OPGESLAGEN');
 }
 function editVkOrder(id){
   var o=S.verkoopOrders.find(function(x){return x.id===id;});if(!o)return;
-  _editVkId=id;prepVerkoop();
-  setTimeout(function(){
-    var nm=document.getElementById('vk-naam');if(nm)nm.value=o.naam||'';
-    var nt=document.getElementById('vk-notitie');if(nt)nt.value=o.notitie||'';
-    // Herstel levering/betaling knoppen
-    document.querySelectorAll('#modal-verkoop .sel-btn').forEach(function(b){
-      var oc=b.getAttribute('onclick')||'';
-      if(oc.includes('vk-levering')&&o.levering&&oc.includes(o.levering)){b.classList.add('selected');_sel['vk-levering']=o.levering;}
-      if(oc.includes('vk-betaling')&&o.betaling&&oc.includes(o.betaling)){b.classList.add('selected');_sel['vk-betaling']=o.betaling;}
-    });
-    // FIX bug #3: herstel artikelen
-    var wrap=document.getElementById('vk-items-wrap');
-    if(wrap){
-      wrap.innerHTML='';
-      getOrderItems(o).forEach(function(item){
-        addVkItem();
-        var rows=wrap.querySelectorAll('[id^="vkrow-"]');
-        var row=rows[rows.length-1];
-        if(!row)return;
-        var idx=row.id.replace('vkrow-','');
-        var prodEl=document.getElementById('vkprod-'+idx);
-        if(prodEl&&item.prodId){
-          prodEl.value=item.prodId;
-          updateVkItemVar(idx);
-          setTimeout(function(){
-            var aEl=document.getElementById('vkaant-'+idx);
-            var pEl=document.getElementById('vkprijs-'+idx);
-            if(aEl)aEl.value=item.aantal||1;
-            if(pEl)pEl.value=(item.prijs||0).toFixed(2);
-            if(item.variantId){
-              var hidden=document.getElementById('vkvarval-'+idx);
-              if(hidden)hidden.value=item.variantId;
-              var grid=document.getElementById('vkvar-grid-'+idx);
-              if(grid){
-                grid.querySelectorAll('.sel-btn').forEach(function(btn){
-                  if(btn.textContent.trim()===item.variantId){/* skip */}
-                });
-                // Match via variant naam
-                var prod=getProd(item.prodId);
-                var variant=getVar(prod,item.variantId);
-                if(variant){
-                  grid.querySelectorAll('.sel-btn').forEach(function(btn){
-                    if(btn.textContent.trim()===variant.naam){
-                      btn.classList.add('selected');
-                    }
-                  });
-                }
-              }
-            }
-          },80);
-        }
-      });
+  // Stap 1: reset formulier EERST (leeg slate)
+  prepVerkoop();
+  // Stap 2: zet edit-id NA prepVerkoop zodat openModal het niet overschrijft
+  _editVkId=id;
+  // Stap 3: vul naam en notitie in
+  var nm=document.getElementById('vk-naam');if(nm)nm.value=o.naam||'';
+  var nt=document.getElementById('vk-notitie');if(nt)nt.value=o.notitie||'';
+  // Stap 4: herstel levering/betaling knoppen
+  document.querySelectorAll('#modal-verkoop .sel-btn').forEach(function(b){
+    var oc=b.getAttribute('onclick')||'';
+    if(oc.includes("'vk-levering'")&&o.levering&&oc.includes("'"+o.levering+"'")){
+      b.classList.add('selected');_sel['vk-levering']=o.levering;
     }
-  },50);
-  openModal('modal-verkoop');
+    if(oc.includes("'vk-betaling'")&&o.betaling&&oc.includes("'"+o.betaling+"'")){
+      b.classList.add('selected');_sel['vk-betaling']=o.betaling;
+    }
+  });
+  // Toon verzendkosten info als levering=verzenden
+  if(o.levering==='verzenden'){
+    var vi=document.getElementById('vk-vrzd-info');if(vi)vi.style.display='block';
+  }
+  // Stap 5: herstel artikelen
+  var wrap=document.getElementById('vk-items-wrap');
+  if(wrap){
+    wrap.innerHTML='';
+    getOrderItems(o).forEach(function(item){
+      addVkItem();
+      var rows=wrap.querySelectorAll('[id^="vkrow-"]');
+      var row=rows[rows.length-1];if(!row)return;
+      var idx=row.id.replace('vkrow-','');
+      var prodEl=document.getElementById('vkprod-'+idx);
+      if(prodEl&&item.prodId){
+        prodEl.value=item.prodId;
+        updateVkItemVar(idx);
+        // Vul aantal en prijs synchroon in (na updateVkItemVar)
+        var aEl=document.getElementById('vkaant-'+idx);
+        var pEl=document.getElementById('vkprijs-'+idx);
+        if(aEl)aEl.value=item.aantal||1;
+        if(pEl)pEl.value=(item.prijs||0).toFixed(2);
+        // Selecteer variant knop
+        if(item.variantId){
+          var hidden=document.getElementById('vkvarval-'+idx);
+          if(hidden)hidden.value=item.variantId;
+          var prod=getProd(item.prodId);
+          var variant=getVar(prod,item.variantId);
+          if(variant){
+            var grid=document.getElementById('vkvar-grid-'+idx);
+            if(grid){
+              grid.querySelectorAll('.sel-btn').forEach(function(btn){
+                if(btn.textContent.trim()===variant.naam)btn.classList.add('selected');
+              });
+            }
+          }
+        }
+      }
+    });
+  }
+  // Stap 6: open modal (openModal slaat prepVerkoop nu over omdat _editVkId gezet is)
+  var el=document.getElementById('modal-verkoop');
+  if(el)el.classList.add('open');
 }
 
 // ════════════════════════════════════════════════════
@@ -1901,193 +2340,450 @@ function prepAfboek(){
     });
   });
 }
+
 function slaAfboekOp(){
   var wrap=document.getElementById('afboek-items-wrap');if(!wrap)return;
   S.producten.filter(isConsumable).forEach(function(prod){
     (prod.varianten&&prod.varianten.length?prod.varianten:[{id:null,naam:'Standaard',kleur:'#555'}]).forEach(function(v){
       var key=sk(prod.id,v.id);
       var inp=document.getElementById('afb-'+key);
-      if(inp){var verb=Math.min(parseInt(inp.value)||0,getStock(prod.id,v.id));setVerbruikt(prod.id,v.id,verb);}
+      if(!inp)return;
+      var verb=Math.min(parseInt(inp.value)||0,getStock(prod.id,v.id));
+      setVerbruikt(prod.id,v.id,verb);
+      S.voorraad['afboek_gedaan_'+prod.id]=true;
     });
   });
-  // Sla flag op zodat retourCredit berekening weet dat verbruik ingevoerd is
-  S.producten.filter(isConsumable).forEach(function(prod){
-    S.voorraad['afboek_gedaan_'+prod.id]=true;
-  });
-  save();closeModal('modal-afboek');renderFinancieel();renderDashboard();showToast('VERBRUIK OPGESLAGEN');
-}
-function renderConsumablesOverzicht(){
-  var wrap=document.getElementById('fin-consumables-wrap');if(!wrap)return;
-  var html='';
-  var cons=S.producten.filter(isConsumable);
-  if(!cons.length){wrap.innerHTML='<div style="font-size:11px;color:var(--muted)">Geen consumables.</div>';return;}
-  cons.forEach(function(prod){
-    (prod.varianten&&prod.varianten.length?prod.varianten:[{id:null,naam:'Standaard',kleur:'#555'}]).forEach(function(v){
-      var stock=getStock(prod.id,v.id);var verb=getVerbruikt(prod.id,v.id);var retour=Math.max(0,stock-verb);
-      html+='<div class="stat-row"><span class="stat-label">'+(prod.icon||'🍺')+' '+prod.naam+' '+escHtml(v.naam)+'</span>';
-      html+='<span style="text-align:right;font-size:11px;color:var(--muted)">'+verb+' verbruikt &nbsp;|&nbsp; '+retour+' retour &nbsp;<span style="font-family:var(--fd);font-size:16px;color:var(--red)">'+fmt(verb*prod.inkoop)+'</span></span></div>';
-    });
-  });
-  wrap.innerHTML=html;
+  save();closeModal('modal-afboek');renderFinancieel();renderVoorraad();renderDashboard();
+  showToast('VERBRUIK OPGESLAGEN');
 }
 
 // ════════════════════════════════════════════════════
 // NOTIFICATIES
 // ════════════════════════════════════════════════════
 function planHerinnering(){
-  if(!('Notification' in window)){showToast('BROWSER ONDERSTEUNT GEEN NOTIFICATIES');return;}
+  if(!('Notification' in window)){showToast('NOTIFICATIES NIET BESCHIKBAAR');return;}
   Notification.requestPermission().then(function(perm){
-    if(perm!=='granted'){showToast('NOTIFICATIES GEBLOKKEERD');return;}
-    openNotifModal();
+    if(perm==='granted'){
+      showToast('NOTIFICATIES INGESCHAKELD');
+      herstelHerinneringen();
+      var ns=document.getElementById('notif-status');
+      if(ns)ns.innerHTML='<div class="info-box">🔔 Notificaties ingeschakeld</div>';
+    } else {
+      showToast('NOTIFICATIES GEWEIGERD');
+    }
   });
-}
-function sluitNotifModal(){var m=document.getElementById('notif-modal-tmp');if(m)m.remove();}
-function openNotifModal(){
-  var reminders=JSON.parse(localStorage.getItem('ksv_reminders')||'[]');
-  var modal=document.createElement('div');
-  modal.id='notif-modal-tmp';
-  modal.style='position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;display:flex;align-items:flex-end';
-  var tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);tomorrow.setHours(9,0,0,0);
-  var pad=function(n){return n.toString().padStart(2,'0');};
-  var dtval=tomorrow.getFullYear()+'-'+pad(tomorrow.getMonth()+1)+'-'+pad(tomorrow.getDate())+'T09:00';
-  modal.innerHTML='<div style="background:#181818;border-top:1px solid var(--border);width:100%;padding:20px 16px 36px;border-radius:12px 12px 0 0;max-height:80vh;overflow-y:auto">'
-    +'<div class="modal-title">HERINNERING INSTELLEN</div>'
-    +'<div class="form-group"><label class="form-label">Wanneer?</label><input class="form-input" type="datetime-local" id="notif-datetime" value="'+dtval+'"></div>'
-    +'<div class="form-group"><label class="form-label">Bericht</label><input class="form-input" type="text" id="notif-msg" value="🎟 Vergeet niet de ticketverkoop bij te werken!"></div>'
-    +'<button class="btn-primary" onclick="slaHerinnering()">HERINNERING OPSLAAN</button>'
-    +'<button class="btn-sec" onclick="sluitNotifModal()" style="width:100%;margin-top:8px">ANNULEREN</button></div>';
-  document.body.appendChild(modal);
-}
-function slaHerinnering(){
-  var dtVal=document.getElementById('notif-datetime').value;
-  var msg=document.getElementById('notif-msg').value.trim()||'Ticketverkoop bijwerken!';
-  if(!dtVal){showToast('DATUM/TIJD KIEZEN');return;}
-  var dt=new Date(dtVal);if(dt<=new Date()){showToast('KIES EEN MOMENT IN DE TOEKOMST');return;}
-  var reminders=JSON.parse(localStorage.getItem('ksv_reminders')||'[]');
-  var rid='r_'+Date.now();var delay=dt.getTime()-Date.now();
-  reminders.push({id:rid,time:dt.getTime(),msg:msg});
-  localStorage.setItem('ksv_reminders',JSON.stringify(reminders));
-  setTimeout(function(){new Notification('KSV Beheer',{body:msg});},delay);
-  sluitNotifModal();updateNotifStatus();showToast('HERINNERING GEPLAND');
-}
-function updateNotifStatus(){
-  var el=document.getElementById('notif-status');if(!el)return;
-  var reminders=JSON.parse(localStorage.getItem('ksv_reminders')||'[]');
-  var future=reminders.filter(function(r){return r.time>Date.now();});
-  el.innerHTML=future.length?'<div class="info-box">🔔 '+future.length+' herinnering(en) gepland</div>':'';
 }
 function herstelHerinneringen(){
-  if(Notification.permission!=='granted')return;
-  var reminders=JSON.parse(localStorage.getItem('ksv_reminders')||'[]');
-  var nu=Date.now();var actief=[];
-  reminders.forEach(function(r){
-    if(r.time<=nu){new Notification('KSV Beheer',{body:'(Gemist) '+r.msg});}
-    else{setTimeout(function(){new Notification('KSV Beheer',{body:r.msg});},r.time-nu);actief.push(r);}
+  // Stuur herinnering voor onbetaalde tickets ouder dan 7 dagen
+  if(typeof Notification==='undefined'||Notification.permission!=='granted')return;
+  S.ticketVerkopen.filter(function(t){return t.betaling!=='betaald';}).forEach(function(t){
+    var ms=Date.now()-new Date(t.datum).getTime();
+    if(ms>7*24*60*60*1000){
+      new Notification('KSV — Ticket onbetaald',{body:t.type+' ('+t.aantal+'x) staat nog open',icon:''});
+    }
   });
-  localStorage.setItem('ksv_reminders',JSON.stringify(actief));updateNotifStatus();
 }
 
 // ════════════════════════════════════════════════════
 // EXPORT / IMPORT
 // ════════════════════════════════════════════════════
 function exportCSV(){
-  // FIX bug #4: alle variabelen correct gedeclareerd in scope
-  var rows=[['KERKWERVE SUMMERVIBE — P&L EXPORT','','',''],['Datum export',todayDisplay(),'',''],['','','','']];
-  rows.push(['OMZET','Aantal','Prijs p/stuk','Totaal']);
-  S.verkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
-    getOrderItems(o).forEach(function(i){
-      var p=getProd(i.prodId);var v=getVar(p,i.variantId);
-      var pr=(i.prijs!=null)?i.prijs:(p?p.verkoop:0);
-      rows.push([o.naam+' — '+(p?p.naam:'?')+(v?' '+v.naam:''),i.aantal||1,pr.toFixed(2),((i.aantal||1)*pr).toFixed(2)]);
+  var k=calcKPIs();
+  var rows=[
+    ['KSV Kerkwerve Summervibe 2026 — P&L Export','',''],
+    ['Gegenereerd op',new Date().toLocaleDateString('nl-NL'),''],
+    ['','',''],
+    ['OMZET','',''],
+    ['Merchandise',k.omzetMerch.toFixed(2),''],
+    ['Tickets',k.omzetTicket.toFixed(2),''],
+    ['Totale omzet',k.totaalOmzet.toFixed(2),''],
+    ['','',''],
+    ['KOSTEN','',''],
+    ['Inkoop merchandise',k.inkoopMerch.toFixed(2),''],
+    ['Inkoop consumables',k.inkoopCons.toFixed(2),''],
+    ['Services & overige',k.inkoopServ.toFixed(2),''],
+    ['Artiestenkosten',(k.inkoopArtiesten||0).toFixed(2),''],
+    ['Retour consumables','-'+k.retourCredit.toFixed(2),''],
+    ['Totale kosten',k.totaalKosten.toFixed(2),''],
+    ['','',''],
+    ['NETTO WINST/VERLIES',k.winst.toFixed(2),''],
+    ['','',''],
+    ['VERWACHT (OPEN)','',''],
+    ['Merchandise omzet open',k.openOmzet.toFixed(2),''],
+    ['Ticket omzet open',k.openTicket.toFixed(2),''],
+    ['Inkoopkosten onbetaald',k.openInkoop.toFixed(2),''],
+    ['','',''],
+    ['TICKETS','',''],
+    ['Type','Aantal','Omzet']
+  ];
+  S.ticketVerkopen.forEach(function(t){rows.push([t.type,t.aantal,t.aantal*t.prijs]);});
+  rows.push(['','','']);
+  rows.push(['MERCHANDISE','','']);
+  rows.push(['Product','Variant','Voorraad']);
+  S.producten.forEach(function(p){
+    (p.varianten||[]).forEach(function(v){
+      rows.push([p.naam,v.naam,getStock(p.id,v.id)]);
     });
   });
-  S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).forEach(function(t){
-    rows.push(['Ticket — '+t.type,t.aantal,t.prijs.toFixed(2),(t.aantal*t.prijs).toFixed(2)]);
-  });
-  rows.push(['','','','']);
-  rows.push(['KOSTEN','Aantal','Prijs p/stuk','Totaal']);
-  S.inkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
-    (o.items||[]).forEach(function(i){
-      var p=getProd(i.prodId);var v=getVar(p,i.variantId);var tp=p?getProdType(p):'merch';
-      rows.push([o.leverancier+' — '+(p?p.naam:'?')+(v?' '+v.naam:'')+' ['+tp+']',i.aantal,(i.inkoop||0).toFixed(2),(i.aantal*(i.inkoop||0)).toFixed(2)]);
-    });
-  });
-  // Tickable kosten als aparte kostenpost
-  var tickKosten=S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).reduce(function(s,t){return s+t.aantal*(t.inkoop||0);},0);
-  if(tickKosten>0)rows.push(['Tickable transactiekosten','','',tickKosten.toFixed(2)]);
-  rows.push(['','','','']);
-  var totOmzet=0,totKosten=0;
-  S.verkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
-    getOrderItems(o).forEach(function(i){var pr=(i.prijs!=null)?i.prijs:(getProd(i.prodId)?getProd(i.prodId).verkoop:0);totOmzet+=(i.aantal||1)*pr;});
-  });
-  S.ticketVerkopen.filter(function(t){return t.betaling==='betaald';}).forEach(function(t){totOmzet+=t.aantal*t.prijs;});
-  S.inkoopOrders.filter(function(o){return o.betaling==='betaald';}).forEach(function(o){
-    (o.items||[]).forEach(function(i){totKosten+=i.aantal*(i.inkoop||0);});
-  });
-  totKosten+=tickKosten;
-  rows.push(['TOTALE OMZET','','',totOmzet.toFixed(2)]);
-  rows.push(['TOTALE KOSTEN','','',(-totKosten).toFixed(2)]);
-  rows.push(['NETTO WINST','','',(totOmzet-totKosten).toFixed(2)]);
   var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
-  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  var blob=new Blob([String.fromCharCode(0xFEFF)+csv],{type:'text/csv;charset=utf-8'});
   var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  // FIX bug #2: a.download correct
-  a.href=url;a.download='KSV_PnL_'+todayDisplay()+'.csv';
+  var a=document.createElement('a');a.href=url;a.download='KSV_PL_'+new Date().toISOString().slice(0,10)+'.csv';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
   showToast('CSV GEEXPORTEERD');
-}// ════════════════════════════════════════════════════
-// RESET
-// ════════════════════════════════════════════════════
+}
+
 function exportData(){
-  var blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  var data={ksv3:S,exported:new Date().toISOString()};
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;
-  a.download='ksv-backup-'+today()+'.json';
+  var a=document.createElement('a');a.href=url;a.download='KSV_backup_'+new Date().toISOString().slice(0,10)+'.json';
   document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
   showToast('BACKUP GEDOWNLOAD');
 }
+
 function importData(){
-  var inp=document.createElement('input');
-  inp.type='file';inp.accept='.json';
-  inp.onchange=function(){
-    var file=inp.files[0];if(!file)return;
+  var inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=function(e){
+    var file=e.target.files[0];if(!file)return;
     var reader=new FileReader();
     reader.onload=function(ev){
       try{
-        var data=JSON.parse(ev.target.result);
-        if(!data.producten||!data.verkoopOrders){showToast('ONGELDIG BESTAND');return;}
-        S=data;save();renderDashboard();showToast('BACKUP GELADEN');
-      }catch(ex){showToast('FOUT BIJ LADEN');}
+        var parsed=JSON.parse(ev.target.result);
+        var data=parsed.ksv3||parsed;
+        if(!data.producten)throw new Error('Ongeldig backup bestand');
+        if(!confirm('Weet je zeker dat je de huidige data overschrijft met de backup?'))return;
+        S=data;
+        if(!S.ticketVerkopen)S.ticketVerkopen=[];
+        if(!S.settings)S.settings={verzend:6.95};
+        if(!S.lineup)S.lineup={artiesten:[],podia:[]};
+        save();renderDashboard();updateLandingStats();
+        showToast('BACKUP GELADEN');
+      }catch(err){showToast('FOUT: '+err.message);}
     };
     reader.readAsText(file);
   };
   inp.click();
 }
 
+// ════════════════════════════════════════════════════
+// RESET
+// ════════════════════════════════════════════════════
 function resetAlles(){
-  var inp=document.getElementById('reset-bevestig');
-  if(!inp||inp.value.trim()!=='WISSEN'){showToast('TYPE WISSEN TER BEVESTIGING');return;}
-  localStorage.removeItem('ksv3');localStorage.removeItem('ksv_reminders');
-  S={producten:[{id:'caps',naam:'Snapback Cap',icon:'🧢',inkoop:10.20,verkoop:20.00,type:'merch',minStock:2,varianten:[{id:'black',naam:'Black',kleur:'#2a2a2a'},{id:'purple',naam:'Purple',kleur:'#6b21c8'},{id:'navy',naam:'Navy',kleur:'#1e3a5f'},{id:'pink',naam:'Pink',kleur:'#e8a0b0'}]}],voorraad:{},inkoopOrders:[],verkoopOrders:[],ticketVerkopen:[],settings:{verzend:6.95}};
-  save();inp.value='';
-  renderDashboard();renderVoorraad();renderVerkoop();renderInkoop();renderAfgerond();renderFinancieel();renderTickets();renderOverzicht();renderProducten();
-  showTab('dashboard');showToast('SYSTEEM GEWIST');
+  var bevestig=document.getElementById('reset-bevestig');
+  if(!bevestig||bevestig.value!=='WISSEN'){showToast('TYPE "WISSEN" OM TE BEVESTIGEN');return;}
+  if(!confirm('LAATSTE WAARSCHUWING: Alle data wordt permanent verwijderd. Doorgaan?'))return;
+  S={
+    producten:[],voorraad:{},inkoopOrders:[],verkoopOrders:[],
+    ticketVerkopen:[],lineup:{artiesten:[],podia:[]},settings:{verzend:6.95}
+  };
+  save();bevestig.value='';
+  renderDashboard();renderVoorraad();renderVerkoop();renderInkoop();renderTickets();renderAfgerond();renderFinancieel();renderProducten();
+  showToast('ALLES GEWIST');
 }
+
+
+// ════════════════════════════════════════════════════
+// LINEUP MODULE
+// ════════════════════════════════════════════════════
+function loadLineup(){
+  if(!S.lineup)S.lineup={artiesten:[],podia:[]};
+  if(!S.lineup.artiesten)S.lineup.artiesten=[];
+  if(!S.lineup.podia)S.lineup.podia=[];
+  return S.lineup;
+}
+function saveLineup(LU){
+  S.lineup=LU;
+  save();
+}
+function openLuModal(id){
+  // Alleen bij nieuw formulier resetten — editArtiest vult zelf in via prepArtiestModal(LU, a)
+  if(id==='modal-artiest'){var LU=loadLineup();prepArtiestModal(LU,null);}
+  if(id==='modal-podium'){renderPodiumLijst();}
+  var el=document.getElementById(id);if(el)el.classList.add('open');
+}
+// Aparte functie voor edit — slaat prepArtiestModal(null) over
+function openLuModalEdit(id){
+  if(id==='modal-podium'){renderPodiumLijst();}
+  var el=document.getElementById(id);if(el)el.classList.add('open');
+}
+function closeLuModal(id){var el=document.getElementById(id);if(el)el.classList.remove('open');}
+['modal-artiest','modal-podium'].forEach(function(id){
+  var el=document.getElementById(id);
+  if(el)el.addEventListener('click',function(e){if(e.target===this)closeLuModal(id);});
+});
+
+function prepArtiestModal(LU,a){
+  var isEdit=a!=null;
+  var title=document.getElementById('modal-artiest-title');
+  if(title)title.textContent=isEdit?'ARTIEST BEWERKEN':'ARTIEST TOEVOEGEN';
+  var podSel=document.getElementById('lu-podium-sel');
+  if(podSel){
+    podSel.innerHTML='<option value="">Kies podium</option>';
+    LU.podia.forEach(function(p){var opt=document.createElement('option');opt.value=p.id;opt.textContent=p.naam;podSel.appendChild(opt);});
+  }
+  var set=function(id,v){var el=document.getElementById(id);if(el)el.value=v||'';};
+  set('lu-naam',isEdit?a.naam:'');set('lu-genre',isEdit?a.genre:'');set('lu-locatie',isEdit?a.locatie:'');
+  set('lu-status',isEdit?a.status:'interesse');set('lu-podium-sel',isEdit?a.podiumId:'');
+  set('lu-start',isEdit?a.start:'');set('lu-einde',isEdit?a.einde:'');set('lu-soundcheck',isEdit?a.soundcheck:'');
+  set('lu-gage-gevraagd',isEdit?a.gageGevraagd:'');set('lu-gage-onderhandeld',isEdit?a.gageOnderhandeld:'');
+  set('lu-betaal-status',isEdit?a.betaalStatus:'');
+  set('lu-contact',isEdit?a.contact:'');set('lu-email',isEdit?a.email:'');set('lu-telefoon',isEdit?a.telefoon:'');
+  set('lu-inputs',isEdit?a.techInputs:'');set('lu-backline',isEdit?a.techBackline:'nee');
+  set('lu-eigen-tech',isEdit?a.techEigenTech:'nee');set('lu-licht',isEdit?a.techLicht:'nee');
+  set('lu-tech-wensen',isEdit?a.techWensen:'');
+  set('lu-catering',isEdit?a.hospCatering:'');set('lu-personen',isEdit?a.hospPersonen:'');
+  set('lu-hotel',isEdit?a.hospHotel:'nee');set('lu-parkeer',isEdit?a.hospParkeer:'');
+  set('lu-groene-kamer',isEdit?a.hospGroeneKamer:'');
+  set('lu-contract-status',isEdit?a.contractStatus:'niet');
+  set('lu-contract-verstuurd',isEdit?a.contractVerstuurd:'');
+  set('lu-contract-ontvangen',isEdit?a.contractOntvangen:'');
+  set('lu-contract-notitie',isEdit?a.contractNotitie:'');
+  set('lu-notitie',isEdit?a.notitie:'');
+  set('lu-edit-id',isEdit?a.id:'');
+}
+
+function saveArtiest(){
+  var naam=document.getElementById('lu-naam').value.trim();
+  var podiumId=document.getElementById('lu-podium-sel').value;
+  var start=document.getElementById('lu-start').value;
+  var einde=document.getElementById('lu-einde').value;
+  if(!naam){showToast('NAAM IS VERPLICHT');return;}
+  if(!podiumId){showToast('KIES EEN PODIUM');return;}
+  if(!start||!einde){showToast('TIJDSLOT IS VERPLICHT');return;}
+  var LU=loadLineup();
+  var editId=document.getElementById('lu-edit-id').value;
+  var podArtiesten=LU.artiesten.filter(function(a){return a.podiumId===podiumId&&a.id!==editId&&a.status!=='geannuleerd';});
+  var conflict=podArtiesten.some(function(a){return a.start&&a.einde&&start<a.einde&&einde>a.start;});
+  if(conflict){if(!confirm('OVERLAP GEDETECTEERD: Er staat al een artiest op dit podium in dit tijdslot. Toch opslaan?'))return;}
+  var get=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
+  var artiest={
+    id:editId||uid(),naam:naam,genre:get('lu-genre'),locatie:get('lu-locatie'),
+    status:get('lu-status'),podiumId:podiumId,start:start,einde:einde,soundcheck:get('lu-soundcheck'),
+    gageGevraagd:get('lu-gage-gevraagd'),gageOnderhandeld:get('lu-gage-onderhandeld'),betaalStatus:get('lu-betaal-status'),
+    contact:get('lu-contact'),email:get('lu-email'),telefoon:get('lu-telefoon'),
+    techInputs:get('lu-inputs'),techBackline:get('lu-backline'),techEigenTech:get('lu-eigen-tech'),
+    techLicht:get('lu-licht'),techWensen:get('lu-tech-wensen'),
+    hospCatering:get('lu-catering'),hospPersonen:get('lu-personen'),hospHotel:get('lu-hotel'),
+    hospParkeer:get('lu-parkeer'),hospGroeneKamer:get('lu-groene-kamer'),
+    contractStatus:get('lu-contract-status'),contractVerstuurd:get('lu-contract-verstuurd'),
+    contractOntvangen:get('lu-contract-ontvangen'),contractNotitie:get('lu-contract-notitie'),
+    notitie:get('lu-notitie')
+  };
+  if(editId){var idx=LU.artiesten.findIndex(function(x){return x.id===editId;});if(idx>-1)LU.artiesten[idx]=artiest;}
+  else{LU.artiesten.push(artiest);}
+  saveLineup(LU);closeLuModal('modal-artiest');renderLineup();renderFinancieel();showToast('ARTIEST OPGESLAGEN');
+}
+
+function editArtiest(id){
+  var LU=loadLineup();
+  var a=LU.artiesten.find(function(x){return x.id===id;});
+  if(!a)return;
+  prepArtiestModal(LU,a);       // Vul formulier met artiest-data
+  openLuModalEdit('modal-artiest'); // Open modal ZONDER reset
+}
+function delArtiest(id){
+  if(!confirm('Weet je het zeker? Dit kan niet ongedaan gemaakt worden.'))return;
+  var LU=loadLineup();LU.artiesten=LU.artiesten.filter(function(a){return a.id!==id;});
+  saveLineup(LU);renderLineup();renderFinancieel();showToast('ARTIEST VERWIJDERD');
+}
+function editArtiestBtn(btn){editArtiest(btn.getAttribute('data-aid'));}
+function delArtiestBtn(btn){delArtiest(btn.getAttribute('data-aid'));}
+function bevestigArtiestBtn(btn){
+  var id=btn.getAttribute('data-aid');
+  var LU=loadLineup();
+  var a=LU.artiesten.find(function(x){return x.id===id;});
+  if(!a)return;
+  a.status='bevestigd';
+  saveLineup(LU);renderLineup();renderFinancieel();
+  showToast(escHtml(a.naam)+' BEVESTIGD');
+}
+
+function savePodium(){
+  var naam=document.getElementById('lu-podium-naam').value.trim();
+  if(!naam){showToast('NAAM IS VERPLICHT');return;}
+  var LU=loadLineup();
+  LU.podia.push({id:uid(),naam:naam,beschrijving:document.getElementById('lu-podium-beschr').value.trim()});
+  saveLineup(LU);
+  document.getElementById('lu-podium-naam').value='';
+  document.getElementById('lu-podium-beschr').value='';
+  renderPodiumLijst();showToast('PODIUM TOEGEVOEGD');
+}
+function delPodium(id){
+  if(!confirm('Weet je het zeker?'))return;
+  var LU=loadLineup();LU.podia=LU.podia.filter(function(p){return p.id!==id;});
+  LU.artiesten.forEach(function(a){if(a.podiumId===id)a.podiumId='';});
+  saveLineup(LU);renderPodiumLijst();renderLineup();showToast('PODIUM VERWIJDERD');
+}
+function delPodiumBtn(btn){delPodium(btn.getAttribute('data-pid'));}
+function renderPodiumLijst(){
+  var wrap=document.getElementById('lu-podium-lijst');if(!wrap)return;
+  var LU=loadLineup();
+  if(!LU.podia.length){wrap.innerHTML='<div class="empty" style="padding:8px">Nog geen podia aangemaakt</div>';return;}
+  var html='<div style="font-size:10px;letter-spacing:3px;color:var(--muted);margin-bottom:8px">BESTAANDE PODIA</div>';
+  LU.podia.forEach(function(p){
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">';
+    html+='<div><div style="font-family:var(--fd);font-size:14px">'+escHtml(p.naam)+'</div>';
+    html+='<div style="font-size:10px;color:var(--muted)">'+escHtml(p.beschrijving||'')+'</div></div>';
+    html+='<button class="btn-danger" style="font-size:11px;padding:4px 8px" data-pid="'+p.id+'" onclick="delPodiumBtn(this)">X</button>';
+    html+='</div>';
+  });
+  wrap.innerHTML=html;
+}
+
+function renderLineup(){
+  var LU=loadLineup();
+  var bevestigd=LU.artiesten.filter(function(a){return a.status==='bevestigd'||a.status==='contract';}).length;
+  var budget=LU.artiesten.filter(function(a){return a.status==='bevestigd'||a.status==='contract';}).reduce(function(s,a){return s+parseFloat(a.gageOnderhandeld||a.gageGevraagd||0);},0);
+  var sd=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+  sd('lu-count',LU.artiesten.length);sd('lu-confirmed',bevestigd);sd('lu-budget',fmt(budget));
+
+  var podFilter=document.getElementById('lu-filter-podium');
+  if(podFilter){
+    var cur=podFilter.value;
+    podFilter.innerHTML='<option value="">Alle podia</option>';
+    LU.podia.forEach(function(p){var opt=document.createElement('option');opt.value=p.id;opt.textContent=p.naam;if(p.id===cur)opt.selected=true;podFilter.appendChild(opt);});
+  }
+
+  var fStatus=(document.getElementById('lu-filter-status')||{}).value||'';
+  var fPodium=(document.getElementById('lu-filter-podium')||{}).value||'';
+  var fBetaal=(document.getElementById('lu-filter-betaal')||{}).value||'';
+  var artiesten=LU.artiesten.slice();
+  if(fStatus)artiesten=artiesten.filter(function(a){return a.status===fStatus;});
+  if(fPodium)artiesten=artiesten.filter(function(a){return a.podiumId===fPodium;});
+  if(fBetaal)artiesten=artiesten.filter(function(a){return a.betaalStatus===fBetaal;});
+
+  renderSchema(LU);
+
+  var tabel=document.getElementById('lu-tabel');if(!tabel)return;
+  if(!artiesten.length){tabel.innerHTML='<div class="empty"><div style="font-size:32px;margin-bottom:8px">🎤</div>Nog geen artiesten toegevoegd</div>';return;}
+
+  var SLBL={interesse:'🟡 INTERESSE',bevestigd:'🟢 BEVESTIGD',contract:'✅ CONTRACT',geannuleerd:'❌ GEANNULEERD'};
+  var CLBL={niet:'📄 NIET VERSTUURD',verstuurd:'📬 VERSTUURD',ondertekend:'✅ ONDERTEKEND'};
+  var BLBL={'':'⬜ NIET BETAALD',aanbetaling:'💛 AANBETALING',volledig:'💚 VOLLEDIG'};
+  // Toelichting: alleen bevestigd/contract + betaalstatus telt mee in financiën
+  var totaalGageBegroot=LU.artiesten.filter(function(a){return a.status==='bevestigd'||a.status==='contract';})
+    .reduce(function(s,a){return s+parseFloat(a.gageOnderhandeld||a.gageGevraagd||0);},0);
+  var totaalGageBetaald=LU.artiesten.filter(function(a){return (a.status==='bevestigd'||a.status==='contract')&&a.betaalStatus==='volledig';})
+    .reduce(function(s,a){return s+parseFloat(a.gageOnderhandeld||a.gageGevraagd||0);},0);
+  var totaalGageAanbetaling=LU.artiesten.filter(function(a){return (a.status==='bevestigd'||a.status==='contract')&&a.betaalStatus==='aanbetaling';})
+    .reduce(function(s,a){return s+parseFloat(a.gageOnderhandeld||a.gageGevraagd||0)*0.5;},0);
+
+  var html='<div class="info-box" style="margin-bottom:10px;font-size:10px">'
+    +'💡 Financieel verwerkt: volledig betaald <strong>'+fmt(totaalGageBetaald)+'</strong>'
+    +' + aanbetaling <strong>'+fmt(totaalGageAanbetaling)+'</strong>'
+    +' = <strong>'+fmt(totaalGageBetaald+totaalGageAanbetaling)+'</strong> van begrote <strong>'+fmt(totaalGageBegroot)+'</strong>'
+    +'</div>';
+  html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">';
+  html+='<tr style="border-bottom:2px solid var(--border);color:var(--muted);font-size:9px;letter-spacing:2px">';
+  ['ARTIEST','PODIUM','TIJDSLOT','STATUS','GAGE','BETALING','CONTRACT',''].forEach(function(h){
+    html+='<th style="text-align:left;padding:8px 6px">'+h+'</th>';
+  });
+  html+='</tr>';
+
+  artiesten.sort(function(a,b){return (a.start||'').localeCompare(b.start||'');}).forEach(function(a){
+    var podium=LU.podia.find(function(p){return p.id===a.podiumId;})||{naam:'—'};
+    var gage=parseFloat(a.gageOnderhandeld||a.gageGevraagd||0);
+    var sKleur={interesse:'var(--orange)',bevestigd:'var(--green)',contract:'var(--green)',geannuleerd:'var(--red)'}[a.status]||'var(--muted)';
+    html+='<tr style="border-bottom:1px solid var(--border)">';
+    html+='<td style="padding:10px 6px"><div style="font-family:var(--fd);font-size:14px">'+escHtml(a.naam)+'</div>';
+    if(a.genre)html+='<div style="color:var(--muted);font-size:10px">'+escHtml(a.genre)+'</div>';
+    html+='</td>';
+    html+='<td style="padding:10px 6px">'+escHtml(podium.naam)+'</td>';
+    html+='<td style="padding:10px 6px;white-space:nowrap">'+(a.start||'—')+' - '+(a.einde||'—')+'</td>';
+    html+='<td style="padding:10px 6px;color:'+sKleur+';font-family:var(--fd);font-size:11px">'+(SLBL[a.status]||a.status)+'</td>';
+    html+='<td style="padding:10px 6px;font-family:var(--fd)">'+(gage>0?fmt(gage):'—')+'</td>';
+    html+='<td style="padding:10px 6px;font-size:10px">'+(BLBL[a.betaalStatus]||'—')+'</td>';
+    html+='<td style="padding:10px 6px;font-size:10px">'+(CLBL[a.contractStatus]||'—')+'</td>';
+    html+='<td style="padding:10px 6px;text-align:right;white-space:nowrap">';
+    // Snelknop status bevestigen (alleen bij interesse)
+    if(a.status==='interesse'){
+      html+='<button class="btn-sec btn-green" style="font-size:10px;padding:4px 8px;margin-right:4px" data-aid="'+a.id+'" onclick="bevestigArtiestBtn(this)">✓ BEVESTIG</button>';
+    }
+    html+='<button class="btn-sec" style="font-size:10px;padding:4px 8px;margin-right:4px" data-aid="'+a.id+'" onclick="editArtiestBtn(this)">EDIT</button>';
+    html+='<button class="btn-danger" style="font-size:10px;padding:4px 8px" data-aid="'+a.id+'" onclick="delArtiestBtn(this)">X</button>';
+    html+='</td></tr>';
+  });
+  html+='</table></div>';
+  tabel.innerHTML=html;
+}
+
+function renderSchema(LU){
+  var wrap=document.getElementById('lu-schema');if(!wrap)return;
+  if(!LU.podia.length||!LU.artiesten.length){wrap.innerHTML='<div style="color:var(--muted);font-size:11px;padding:8px">Voeg podia en artiesten toe om het schema te zien.</div>';return;}
+  var starts=LU.artiesten.map(function(a){return a.start;}).filter(Boolean).sort();
+  var eindes=LU.artiesten.map(function(a){return a.einde;}).filter(Boolean).sort();
+  if(!starts.length){wrap.innerHTML='<div style="color:var(--muted);font-size:11px;padding:8px">Stel tijdslots in om het schema te zien.</div>';return;}
+  var startH=parseInt(starts[0].split(':')[0]);
+  var eindeH=parseInt(eindes[eindes.length-1].split(':')[0])+1;
+  if(eindeH<=startH)eindeH=startH+8;
+  var totalH=eindeH-startH;
+  var PPH=80;var LABEL=90;
+  var html='<div style="position:relative;min-width:'+(LABEL+totalH*PPH+20)+'px">';
+  // Uurtijden header
+  html+='<div style="display:flex;margin-left:'+LABEL+'px;margin-bottom:4px">';
+  for(var h=startH;h<=eindeH;h++){html+='<div style="width:'+PPH+'px;font-size:9px;color:var(--muted);flex-shrink:0">'+String(h).padStart(2,'0')+':00</div>';}
+  html+='</div>';
+  LU.podia.forEach(function(p){
+    var pa=LU.artiesten
+      .filter(function(a){return a.podiumId===p.id&&a.start&&a.einde&&a.status!=='geannuleerd';})
+      .slice().sort(function(a,b){return a.start.localeCompare(b.start);});
+    html+='<div style="display:flex;align-items:center;margin-bottom:8px">';
+    html+='<div style="width:'+LABEL+'px;font-family:var(--fd);font-size:11px;color:var(--accent);flex-shrink:0;padding-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(p.naam)+'</div>';
+    html+='<div style="position:relative;height:44px;flex:1;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:2px">';
+    // Uurlijnen
+    for(var h2=0;h2<totalH;h2++){
+      html+='<div style="position:absolute;top:0;bottom:0;left:'+(h2*PPH)+'px;width:1px;background:var(--border)"></div>';
+    }
+    // Artiesten blokken
+    pa.forEach(function(a,i){
+      var aS=parseInt(a.start.split(':')[0])+(parseInt(a.start.split(':')[1])||0)/60;
+      var aE=parseInt(a.einde.split(':')[0])+(parseInt(a.einde.split(':')[1])||0)/60;
+      var left=(aS-startH)*PPH;var width=(aE-aS)*PPH;
+      var col={interesse:'var(--orange)',bevestigd:'var(--green)',contract:'#4ade80',geannuleerd:'var(--red)'}[a.status]||'var(--blue)';
+      html+='<div style="position:absolute;top:4px;bottom:4px;left:'+left+'px;width:'+(width-2)+'px;background:'+col+';border-radius:2px;padding:0 5px;display:flex;align-items:center;overflow:hidden;z-index:1" title="'+escHtml(a.naam)+' | '+a.start+' – '+a.einde+'">';
+      html+='<span style="font-family:var(--fd);font-size:10px;color:#000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(a.naam)+'</span>';
+      html+='</div>';
+      // Tijdgat naar volgende artiest op dit podium
+      if(i<pa.length-1){
+        var volgende=pa[i+1];
+        var gapS=aE;
+        var gapE=parseInt(volgende.start.split(':')[0])+(parseInt(volgende.start.split(':')[1])||0)/60;
+        if(gapE>gapS){
+          var gapLeft=(gapS-startH)*PPH;
+          var gapWidth=(gapE-gapS)*PPH;
+          var gapMin=Math.round((gapE-gapS)*60);
+          html+='<div style="position:absolute;top:4px;bottom:4px;left:'+gapLeft+'px;width:'+gapWidth+'px;background:rgba(255,255,255,0.04);border:1px dashed rgba(255,255,255,0.15);border-radius:2px;display:flex;align-items:center;justify-content:center;z-index:0" title="Pauze: '+gapMin+' min">';
+          if(gapWidth>30)html+='<span style="font-size:9px;color:rgba(255,255,255,0.3)">'+gapMin+'m</span>';
+          html+='</div>';
+        }
+      }
+    });
+    html+='</div></div>';
+  });
+  html+='</div>';
+  wrap.innerHTML=html;
+}
+
+
+// ════════════════════════════════════════════════════
+// LINEUP MODULE
+// ════════════════════════════════════════════════════
 
 // ════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════
 load();
 renderDashboard();
-syncLaden();
-if('Notification' in window && Notification.permission==='granted')herstelHerinneringen();
 updateLandingStats();
+if('Notification' in window && Notification.permission==='granted')herstelHerinneringen();
+syncLaden(true);   // Laad cloud bij opstarten (true = init mode)
+startPolling();    // Start automatische polling elke 15 seconden
 
 // Wire landing page CTA en home knop via addEventListener (geen onclick strings)
 document.getElementById('lp-cta-btn').addEventListener('click',function(){hideLanding('dashboard');});
 document.getElementById('home-btn').addEventListener('click',showLanding);
+
 </script>
 </body>
 </html>
