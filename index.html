@@ -686,36 +686,33 @@ function syncLaden(){
   .then(function(data){
     if(data.record&&data.record.producten){
       var cloud=data.record;
-      // Veiligheidscheck: tel datapunten in cloud vs lokaal
-      var cloudPunten=(cloud.verkoopOrders||[]).length+(cloud.inkoopOrders||[]).length+(cloud.ticketVerkopen||[]).length+(cloud.producten||[]).length;
-      var lokalePunten=(S.verkoopOrders||[]).length+(S.inkoopOrders||[]).length+(S.ticketVerkopen||[]).length+(S.producten||[]).length;
-      // Overschrijf lokaal alleen als cloud meer data heeft of lokaal leeg is
-      if(cloudPunten>=lokalePunten||lokalePunten<=1){
+      var cloudTs=cloud._lastSaved||0;
+      var lokaalTs=S._lastSaved||0;
+      // Laad cloud als cloud nieuwer is dan lokaal, of lokaal leeg is
+      if(cloudTs>=lokaalTs||S.verkoopOrders.length===0){
         S=cloud;
         if(!S.ticketVerkopen)S.ticketVerkopen=[];
         if(!S.settings)S.settings={verzend:6.95};
         S.producten.forEach(function(p){if(!p.type)p.type='merch';if(!p.minStock)p.minStock=2;});
         localStorage.setItem('ksv3',JSON.stringify(S));
         renderDashboard();
+        updateLandingStats();
       }
     }
     updateSyncStatus('ok');
     _syncing=false;
   })
   .catch(function(err){
-    console.warn('syncLaden fout:',err.message,err);
+    console.warn('syncLaden fout:',err.message);
     updateSyncStatus('fout');
     _syncing=false;
-    // Stille fout - app werkt gewoon door met lokale data
   });
 }
 
 function syncOpslaan(){
-  // Debounce: wacht 1.5s na laatste save() aanroep voordat we uploaden
+  // Debounce: wacht 1.5s na laatste save() aanroep
   if(_syncTimeout)clearTimeout(_syncTimeout);
   _syncTimeout=setTimeout(function(){
-    if(_syncing)return;
-    _syncing=true;
     updateSyncStatus('opslaan');
     fetch('https://api.jsonbin.io/v3/b/'+KSV_BIN_ID,{
       method:'PUT',
@@ -764,6 +761,7 @@ var S = {
 };
 
 function save(){
+  S._lastSaved = Date.now();
   try{localStorage.setItem('ksv3',JSON.stringify(S));}
   catch(e){showToast('⚠️ OPSLAAN MISLUKT — Geheugen vol?');}
   syncOpslaan();
