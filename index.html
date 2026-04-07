@@ -223,9 +223,51 @@
     .order-fin{flex-direction:column;gap:8px;}
     .hdr-btns .btn-sec{padding:6px 8px;font-size:10px;}
   }
+
+  /* ── WACHTWOORDSCHERM ── */
+  #ksv-auth{
+    position:fixed;inset:0;z-index:99999;
+    background:linear-gradient(135deg,#0d0010 0%,#1a0820 35%,#2d0e0e 65%,#1a0a00 100%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  #ksv-auth.hidden{display:none;}
+  .auth-box{
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+    border-radius:6px;padding:32px 28px;width:100%;max-width:340px;text-align:center;
+  }
+  .auth-logo{font-family:var(--fd);font-size:48px;letter-spacing:2px;color:var(--white);line-height:1;}
+  .auth-logo span{color:var(--accent);}
+  .auth-sub{font-size:9px;letter-spacing:4px;color:rgba(245,240,232,.3);margin:8px 0 24px;}
+  .auth-input{
+    width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+    border-radius:3px;padding:14px 16px;color:var(--white);font-family:var(--fm);
+    font-size:15px;text-align:center;letter-spacing:4px;outline:none;
+    transition:border-color .2s;
+  }
+  .auth-input:focus{border-color:var(--accent);}
+  .auth-input.fout{border-color:var(--red);animation:authShake .3s ease;}
+  @keyframes authShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .auth-btn{
+    width:100%;margin-top:12px;background:var(--accent);color:var(--black);
+    font-family:var(--fd);font-size:16px;letter-spacing:4px;padding:16px;
+    border:none;cursor:pointer;border-radius:3px;
+  }
+  .auth-err{margin-top:10px;font-size:11px;color:var(--red);letter-spacing:1px;min-height:18px;}
 </style>
 </head>
 <body>
+
+<!-- ════ WACHTWOORDSCHERM ════ -->
+<div id="ksv-auth">
+  <div class="auth-box">
+    <div class="auth-logo">KERKWERVE<br><span>BEHEER</span></div>
+    <div class="auth-sub">BEVEILIGD BEHEERSYSTEEM</div>
+    <input class="auth-input" type="password" id="auth-input" placeholder="••••••••"
+      onkeydown="if(event.key==='Enter')checkAuth()" autocomplete="current-password">
+    <button class="auth-btn" onclick="checkAuth()">TOEGANG</button>
+    <div class="auth-err" id="auth-err"></div>
+  </div>
+</div>
 
 <!-- ════ LANDING PAGE ════ -->
 <div id="ksv-landing">
@@ -718,12 +760,44 @@
  */
 
 // ════════════════════════════════════════════════════
+// WACHTWOORDBEVEILIGING
+// Verander KSV_PASSWORD naar jouw eigen wachtwoord.
+// ADVIES: gebruik ook een JSONBin Access Key i.p.v.
+// de Master Key — zie jsonbin.io → Settings → Access Keys.
+// ════════════════════════════════════════════════════
+var KSV_PASSWORD = 'kerkwerve2026';
+
+function checkAuth(){
+  var inp=document.getElementById('auth-input');
+  var err=document.getElementById('auth-err');
+  if(!inp)return;
+  if(inp.value===KSV_PASSWORD){
+    sessionStorage.setItem('ksv_auth','1');
+    document.getElementById('ksv-auth').classList.add('hidden');
+    // Start de app
+    load();renderDashboard();updateLandingStats();
+    if('Notification' in window && Notification.permission==='granted')herstelHerinneringen();
+    initSyncVersie();
+    syncLadenVolledig();
+    startPolling();
+    document.getElementById('lp-cta-btn').addEventListener('click',function(){hideLanding('dashboard');});
+    document.getElementById('home-btn').addEventListener('click',showLanding);
+  } else {
+    err.textContent='Onjuist wachtwoord.';
+    inp.classList.add('fout');
+    inp.value='';
+    setTimeout(function(){inp.classList.remove('fout');err.textContent='';},1200);
+  }
+}
+
+// ════════════════════════════════════════════════════
 // CLOUD SYNC — JSONBin.io
 // Versienummer-gebaseerde sync: JSONBin versienummer
 // bepaalt welk apparaat de meest recente data heeft.
 // Geen timestamp vergelijking meer — was de root cause.
 // ════════════════════════════════════════════════════
 var KSV_BIN_ID  = '69d2b27436566621a8805757';
+// VERVANG HIERONDER DE MASTER KEY DOOR EEN ACCESS KEY (jsonbin.io → Settings → Access Keys)
 var KSV_API_KEY = '$2a$10$DTMyywKe.kvN4KogAjdplOF.RUZozano.ux1fdpexn0pop5X5iJa6';
 var KSV_API_URL = 'https://api.jsonbin.io/v3/b/' + KSV_BIN_ID;
 
@@ -890,8 +964,8 @@ window.addEventListener('offline',function(){
 });
 
 function renderAll(){
-  try{renderDashboard();}catch(e){}
-  try{updateLandingStats();}catch(e){}
+  try{renderDashboard();}catch(e){console.error('renderDashboard fout:',e);}
+  try{updateLandingStats();}catch(e){console.error('updateLandingStats fout:',e);}
   var active=document.querySelector('.content.active');
   if(!active)return;
   var id=active.id;
@@ -902,7 +976,7 @@ function renderAll(){
     'tab-tickets':renderTickets,'tab-lineup':renderLineup,
     'tab-afgerond':renderAfgerond,'tab-producten':renderProducten
   };
-  if(map[id]&&id!=='tab-dashboard')try{map[id]();}catch(e){}
+  if(map[id]&&id!=='tab-dashboard')try{map[id]();}catch(e){console.error('render fout ('+id+'):',e);}
 }
 
 // ════════════════════════════════════════════════════
@@ -965,15 +1039,14 @@ function load(){
 // HELPERS
 // ════════════════════════════════════════════════════
 function escHtml(str){
-  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
 function fmt(n){return '€'+parseFloat(n||0).toFixed(2).replace('.',',');}
 function today(){
   var d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-function todayDisplay(){return today();}
 function displayDate(dateStr){
   if(!dateStr)return '';
   // YYYY-MM-DD -> DD/MM/YY
