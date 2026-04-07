@@ -798,23 +798,33 @@ var _syncSaving   = false;
 var _syncTimeout  = null;
 var _pollInterval = null;
 var _lokaalVersie = 0;
-var POLL_MS       = 15000;
+// Poll elke 30s (was 15s) — gratis plan heeft request-limieten
+var POLL_MS       = 30000;
 
 function updateSyncStatus(state, extra){
   var el=document.getElementById('sync-status');if(!el)return;
   var now=new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'});
   var states={
-    ok:     {tekst:'☁️ '+now,                    kleur:'var(--green)'},
-    laden:  {tekst:'⏳ LADEN',                    kleur:'var(--muted)'},
-    opslaan:{tekst:'⏳ SYNC...',                  kleur:'var(--muted)'},
-    fout:   {tekst:'⚠️ '+(extra||'OFFLINE'),     kleur:'var(--orange)'}
+    ok:     {tekst:'☁️ '+now,                kleur:'var(--green)'},
+    laden:  {tekst:'⏳ LADEN',               kleur:'var(--muted)'},
+    opslaan:{tekst:'⏳ SYNC...',             kleur:'var(--muted)'},
+    fout:   {tekst:'⚠️ '+(extra||'OFFLINE'),kleur:'var(--orange)'}
   };
   var st=states[state]||states.fout;
   el.textContent=st.tekst;el.style.color=st.kleur;
 }
 
-function _applyCloudRecord(record, versie){
+function _syncErrReden(msg){
+  if(msg.indexOf('401')>-1)return 'API KEY FOUT';
+  if(msg.indexOf('402')>-1)return 'PLAN LIMIET';
+  if(msg.indexOf('404')>-1)return 'BIN NIET GEVONDEN';
+  return 'OFFLINE';
+}
+
+// Versienummer zit in S._syncVersion (geen JSONBin-metadata nodig — gratis plan)
+function _applyCloudRecord(record){
   if(!record||!record.producten)return;
+  var versie=record._syncVersion||0;
   S=record;
   if(!S.ticketVerkopen)S.ticketVerkopen=[];
   if(!S.settings)S.settings={verzend:6.95};
@@ -830,67 +840,38 @@ function _applyCloudRecord(record, versie){
   localStorage.setItem('ksv3_versie',String(versie));
 }
 
+// Poll + laden gecombineerd: één GET, check _syncVersion in de data zelf
 function syncPollVersie(){
   if(_syncSaving)return;
-  fetch(KSV_API_URL+'/latest',{
+  fetch(KSV_API_URL,{
     method:'GET',
-    headers:{
-      'X-Master-Key': KSV_API_KEY,
-      'X-Bin-Meta':   'true'
-    }
+    headers:{'X-Master-Key':KSV_API_KEY}
   })
   .then(function(res){
     if(!res.ok)throw new Error('HTTP '+res.status);
     return res.json();
   })
   .then(function(data){
-    var cloudVersie=(data.metadata&&data.metadata.version!=null)
-      ? data.metadata.version : (data.version||0);
+    var record=data.record;
+    var cloudVersie=(record&&record._syncVersion)||0;
     if(cloudVersie>_lokaalVersie){
-      syncLadenVolledig();
-    } else {
-      updateSyncStatus('ok');
-    }
-  })
-  .catch(function(err){
-    console.warn('Poll fout:',err.message);
-    var reden=err.message.indexOf('401')>-1?'API KEY FOUT':
-              err.message.indexOf('404')>-1?'BIN NIET GEVONDEN':'OFFLINE';
-    updateSyncStatus('fout',reden);
-  });
-}
-
-function syncLadenVolledig(){
-  updateSyncStatus('laden');
-  fetch(KSV_API_URL+'/latest',{
-    method:'GET',
-    headers:{
-      'X-Master-Key': KSV_API_KEY,
-      'X-Bin-Meta':   'false'
-    }
-  })
-  .then(function(res){
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    return res.json();
-  })
-  .then(function(data){
-    var record = data.record;
-    var versie = (data.metadata&&data.metadata.version!=null)
-                 ? data.metadata.version : 0;
-    if(versie>_lokaalVersie){
       var wasLeeg=(_lokaalVersie===0);
-      _applyCloudRecord(record, versie);
+      _applyCloudRecord(record);
       renderAll();
       if(!wasLeeg)showToast('☁️ BIJGEWERKT VANAF CLOUD');
     }
     updateSyncStatus('ok');
   })
   .catch(function(err){
-    console.warn('Laden fout:',err.message);
-    var reden=err.message.indexOf('401')>-1?'API KEY FOUT':
-              err.message.indexOf('404')>-1?'BIN NIET GEVONDEN':'OFFLINE';
-    updateSyncStatus('fout',reden);
+    console.warn('Poll fout:',err.message);
+    updateSyncStatus('fout',_syncErrReden(err.message));
   });
+}
+
+// syncLadenVolledig = alias voor syncPollVersie (zelfde aanroep op gratis plan)
+function syncLadenVolledig(){
+  updateSyncStatus('laden');
+  syncPollVersie();
 }
 
 function syncOpslaan(){
@@ -899,11 +880,13 @@ function syncOpslaan(){
     if(_syncSaving)return;
     _syncSaving=true;
     updateSyncStatus('opslaan');
+    // Versie ophogen in de data zelf — geen JSONBin-metadata nodig
+    S._syncVersion=(_lokaalVersie||0)+1;
     fetch(KSV_API_URL,{
       method:'PUT',
       headers:{
-        'Content-Type': 'application/json',
-        'X-Master-Key': KSV_API_KEY
+        'Content-Type':'application/json',
+        'X-Master-Key':KSV_API_KEY
       },
       body:JSON.stringify(S)
     })
@@ -911,11 +894,9 @@ function syncOpslaan(){
       if(!res.ok)throw new Error('HTTP '+res.status);
       return res.json();
     })
-    .then(function(data){
-      var versie=(data.metadata&&data.metadata.version!=null)
-                 ? data.metadata.version : _lokaalVersie+1;
-      _lokaalVersie=versie;
-      localStorage.setItem('ksv3_versie',String(versie));
+    .then(function(){
+      _lokaalVersie=S._syncVersion;
+      localStorage.setItem('ksv3_versie',String(_lokaalVersie));
       updateSyncStatus('ok');
       _syncSaving=false;
     })
@@ -935,6 +916,8 @@ function startPolling(){
 function initSyncVersie(){
   var v=parseInt(localStorage.getItem('ksv3_versie')||'0');
   _lokaalVersie=isNaN(v)?0:v;
+  // Gebruik ook _syncVersion uit geladen data als die hoger is
+  if(S._syncVersion&&S._syncVersion>_lokaalVersie)_lokaalVersie=S._syncVersion;
 }
 
 document.addEventListener('visibilitychange',function(){
