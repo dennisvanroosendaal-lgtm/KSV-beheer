@@ -1748,7 +1748,7 @@ function sluitOrder(id){
     getOrderItems(o).forEach(function(i){addStock(i.prodId,i.variantId||null,-(i.aantal||1));});
     o.voorraadAfgeboekt=true;
   }
-  o.gesloten=true;o.sluitDatum=todayDisplay();
+  o.gesloten=true;o.sluitDatum=today();
   save();renderVerkoop();renderVoorraad();renderAfgerond();renderDashboard();renderFinancieel();showToast('ORDER AFGEROND');
 }
 
@@ -1797,7 +1797,7 @@ function renderInkoop(){
 
 function ontvangInkoop(id){
   var o=S.inkoopOrders.find(function(x){return x.id===id;});if(!o||o.ontvangen)return;
-  o.ontvangen=true;o.ontvangstDatum=todayDisplay();
+  o.ontvangen=true;o.ontvangstDatum=today();
   (o.items||[]).forEach(function(i){
     var p=getProd(i.prodId);if(getProdType(p)!=='service')addStock(i.prodId,i.variantId||null,i.aantal);
   });
@@ -2033,7 +2033,7 @@ function saveInkoop(){
   });
   if(!items.length){showToast('MINIMAAL 1 PRODUCT');return;}
   if(items.some(function(i){return i.inkoop<0;})){showToast('INKOOPPRIJS MAG NIET NEGATIEF ZIJN');return;}
-  S.inkoopOrders.push({id:uid(),leverancier:leverancier,betaling:betaling,datum:todayDisplay(),
+  S.inkoopOrders.push({id:uid(),leverancier:leverancier,betaling:betaling,datum:today(),
     leverdatum:document.getElementById('ink-datum').value||null,
     notitie:document.getElementById('ink-notitie').value.trim(),items:items,ontvangen:false});
   save();closeModal('modal-inkoop');renderInkoop();renderDashboard();renderFinancieel();showToast('INKOOPORDER OPGESLAGEN');
@@ -2155,11 +2155,11 @@ function saveVerkoop(){
     if(bestaand&&bestaand.voorraadAfgeboekt)getOrderItems(bestaand).forEach(function(i){addStock(i.prodId,i.variantId||null,i.aantal||1);});
     S.verkoopOrders=S.verkoopOrders.filter(function(x){return x.id!==_editVkId;});
     // [NIEUW] heeftOnderprijsItem opgeslagen op order object
-    S.verkoopOrders.splice(Math.max(0,ei),0,{id:_editVkId,naam:naam,items:items,prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,levering:levering,betaling:betaling,status:status,datum:bestaand?bestaand.datum:todayDisplay(),notitie:notitie,gesloten:false,voorraadAfgeboekt:directAfboeken,onderprijs:heeftOnderprijsItem});
+    S.verkoopOrders.splice(Math.max(0,ei),0,{id:_editVkId,naam:naam,items:items,prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,levering:levering,betaling:betaling,status:status,datum:bestaand?bestaand.datum:today(),notitie:notitie,gesloten:false,voorraadAfgeboekt:directAfboeken,onderprijs:heeftOnderprijsItem});
     _editVkId=null;
   } else {
     // [NIEUW] heeftOnderprijsItem opgeslagen op order object
-    S.verkoopOrders.push({id:uid(),naam:naam,items:items,prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,levering:levering,betaling:betaling,status:status,datum:todayDisplay(),notitie:notitie,gesloten:false,voorraadAfgeboekt:directAfboeken,onderprijs:heeftOnderprijsItem});
+    S.verkoopOrders.push({id:uid(),naam:naam,items:items,prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,levering:levering,betaling:betaling,status:status,datum:today(),notitie:notitie,gesloten:false,voorraadAfgeboekt:directAfboeken,onderprijs:heeftOnderprijsItem});
   }
   save();closeModal('modal-verkoop');renderVerkoop();renderVoorraad();renderDashboard();renderFinancieel();showToast('ORDER OPGESLAGEN');
 }
