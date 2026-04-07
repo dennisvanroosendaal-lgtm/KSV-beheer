@@ -774,14 +774,7 @@ function checkAuth(){
   if(inp.value===KSV_PASSWORD){
     sessionStorage.setItem('ksv_auth','1');
     document.getElementById('ksv-auth').classList.add('hidden');
-    // Start de app
-    load();renderDashboard();updateLandingStats();
-    if('Notification' in window && Notification.permission==='granted')herstelHerinneringen();
-    initSyncVersie();
-    syncLadenVolledig();
-    startPolling();
-    document.getElementById('lp-cta-btn').addEventListener('click',function(){hideLanding('dashboard');});
-    document.getElementById('home-btn').addEventListener('click',showLanding);
+    startApp();
   } else {
     err.textContent='Onjuist wachtwoord.';
     inp.classList.add('fout');
@@ -2862,19 +2855,31 @@ function renderSchema(LU){
 // ════════════════════════════════════════════════════
 
 // ════════════════════════════════════════════════════
-// INIT
+// INIT — app start alleen na succesvolle auth
 // ════════════════════════════════════════════════════
-load();
-renderDashboard();
-updateLandingStats();
-if('Notification' in window && Notification.permission==='granted')herstelHerinneringen();
-initSyncVersie();      // Lees lokaal versienummer uit localStorage
-syncLadenVolledig();   // Laad cloud bij opstarten
-startPolling();    // Start automatische polling elke 15 seconden
+function startApp(){
+  load();
+  renderDashboard();
+  updateLandingStats();
+  if('Notification' in window && Notification.permission==='granted')herstelHerinneringen();
+  initSyncVersie();
+  syncLadenVolledig();
+  startPolling();
+  document.getElementById('lp-cta-btn').addEventListener('click',function(){hideLanding('dashboard');});
+  document.getElementById('home-btn').addEventListener('click',showLanding);
+}
 
-// Wire landing page CTA en home knop via addEventListener (geen onclick strings)
-document.getElementById('lp-cta-btn').addEventListener('click',function(){hideLanding('dashboard');});
-document.getElementById('home-btn').addEventListener('click',showLanding);
+if(sessionStorage.getItem('ksv_auth')==='1'){
+  // Al ingelogd in deze sessie — sla wachtwoordscherm over
+  document.getElementById('ksv-auth').classList.add('hidden');
+  startApp();
+} else {
+  // Wachtwoordscherm tonen, app start via checkAuth()
+  setTimeout(function(){
+    var inp=document.getElementById('auth-input');
+    if(inp)inp.focus();
+  },100);
+}
 
 </script>
 </body>
