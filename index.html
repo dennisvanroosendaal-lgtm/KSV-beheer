@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KSV – Beheer</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;700&display=swap');
   :root {
     --black:#0a0a0a; --dark:#111; --card:#161616; --border:rgba(255,255,255,0.07);
     --white:#f5f0e8; --muted:rgba(245,240,232,0.55); --accent:#ffdd00;
     --green:#4ade80; --red:#f87171; --blue:#60a5fa; --orange:#fb923c;
-    --fd:'Bebas Neue','Impact',sans-serif; --fm:'Space Mono','Courier New',monospace;
+    --fd:'Bebas Neue','Impact',sans-serif; --fm:'Inter','Segoe UI',sans-serif;
     --hdr-h:41px;
     --tabs-h:40px;
     --bar-h:81px; /* --hdr-h + --tabs-h */
@@ -85,7 +85,7 @@
   .card-title{font-family:var(--fd);font-size:15px;letter-spacing:2px;color:var(--accent);margin-bottom:12px;}
   .stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);}
   .stat-row:last-child{border-bottom:none;}
-  .stat-label{color:var(--muted);font-size:10px;letter-spacing:2px;text-transform:uppercase;}
+  .stat-label{color:var(--muted);font-size:12px;letter-spacing:0.5px;text-transform:uppercase;}
   .stat-value{font-family:var(--fd);font-size:20px;letter-spacing:1px;}
   .green{color:var(--green)!important;} .red{color:var(--red)!important;}
   .orange{color:var(--orange)!important;} .accent{color:var(--accent)!important;} .blue{color:var(--blue)!important;}
@@ -338,26 +338,26 @@
 <div class="content active" id="tab-dashboard">
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
     <div class="card" style="margin-bottom:0;text-align:center;padding:14px 8px">
-      <div style="font-size:8px;letter-spacing:3px;color:var(--muted);margin-bottom:2px">NETTO WINST</div>
-      <div id="dash-winst" class="green" style="font-family:var(--fd);font-size:32px;letter-spacing:-1px;line-height:1">€0</div>
+      <div style="font-size:10px;letter-spacing:1px;color:var(--muted);margin-bottom:2px">NETTO WINST</div>
+      <div id="dash-winst" class="green" style="font-family:var(--fd);font-size:clamp(22px,7vw,32px);letter-spacing:-1px;line-height:1">€0</div>
     </div>
     <div class="card" style="margin-bottom:0;text-align:center;padding:14px 8px">
-      <div style="font-size:8px;letter-spacing:3px;color:var(--muted);margin-bottom:2px">TOTALE OMZET</div>
-      <div id="dash-omzet" style="font-family:var(--fd);font-size:32px;letter-spacing:-1px;line-height:1;color:var(--accent)">€0</div>
+      <div style="font-size:10px;letter-spacing:1px;color:var(--muted);margin-bottom:2px">TOTALE OMZET</div>
+      <div id="dash-omzet" style="font-family:var(--fd);font-size:clamp(22px,7vw,32px);letter-spacing:-1px;line-height:1;color:var(--accent)">€0</div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
-    <div class="card" style="margin-bottom:0;text-align:center;padding:12px 6px">
-      <div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:2px">KOSTEN</div>
-      <div id="dash-inkoop" style="font-family:var(--fd);font-size:22px;color:var(--red)">€0</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+    <div class="card" style="margin-bottom:0;text-align:center;padding:10px 4px">
+      <div style="font-size:10px;letter-spacing:0.5px;color:var(--muted);margin-bottom:2px">KOSTEN</div>
+      <div id="dash-inkoop" style="font-family:var(--fd);font-size:clamp(14px,4.5vw,22px);color:var(--red)">€0</div>
     </div>
-    <div class="card" style="margin-bottom:0;text-align:center;padding:12px 6px">
-      <div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:2px">OPEN ORDERS</div>
-      <div id="dash-open" style="font-family:var(--fd);font-size:22px;color:var(--orange)">0</div>
+    <div class="card" style="margin-bottom:0;text-align:center;padding:10px 4px">
+      <div style="font-size:10px;letter-spacing:0.5px;color:var(--muted);margin-bottom:2px">OPEN</div>
+      <div id="dash-open" style="font-family:var(--fd);font-size:clamp(14px,4.5vw,22px);color:var(--orange)">0</div>
     </div>
-    <div class="card" style="margin-bottom:0;text-align:center;padding:12px 6px">
-      <div style="font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:2px">IN STOCK</div>
-      <div id="dash-stock" style="font-family:var(--fd);font-size:22px">0</div>
+    <div class="card" style="margin-bottom:0;text-align:center;padding:10px 4px">
+      <div style="font-size:10px;letter-spacing:0.5px;color:var(--muted);margin-bottom:2px">IN STOCK</div>
+      <div id="dash-stock" style="font-family:var(--fd);font-size:clamp(14px,4.5vw,22px)">0</div>
     </div>
   </div>
   <div id="dash-alerts"></div>
