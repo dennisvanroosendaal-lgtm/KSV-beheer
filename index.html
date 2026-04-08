@@ -13,6 +13,7 @@
     --fd:'Bebas Neue','Impact',sans-serif; --fm:'Inter','Segoe UI',sans-serif;
     --hdr-h:41px;
     --tabs-h:40px;
+    --sub-h:36px;
     --bar-h:81px; /* --hdr-h + --tabs-h */
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -61,23 +62,42 @@
   .app-title span{color:var(--accent);}
   .hdr-btns{display:flex;gap:6px;align-items:center;flex-shrink:0;}
 
-  /* ── TABS ── */
-  .tabs{
-    display:flex;background:var(--dark);border-bottom:1px solid var(--border);
-    overflow-x:auto;scrollbar-width:none;position:fixed;
-    top:var(--hdr-h);left:0;right:0;z-index:99;
+  /* ── HOOFD NAVIGATIE (5 groepen) ── */
+  .main-nav{
+    display:grid;grid-template-columns:repeat(5,1fr);
+    background:var(--dark);border-bottom:1px solid var(--border);
+    position:fixed;top:var(--hdr-h);left:0;right:0;z-index:99;
     height:var(--tabs-h);box-sizing:border-box;
   }
-  .tabs::-webkit-scrollbar{display:none;}
-  .tab{
-    font-family:var(--fd);font-size:13px;letter-spacing:2px;padding:11px 14px;
-    color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;
-    white-space:nowrap;transition:color .2s,border-color .2s;flex-shrink:0;
+  .main-nav-item{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:1px;background:none;border:none;border-bottom:2px solid transparent;
+    color:var(--muted);font-family:var(--fd);font-size:10px;letter-spacing:1px;
+    cursor:pointer;transition:color .2s,border-color .2s;padding:2px;
   }
-  .tab.active{color:var(--accent);border-color:var(--accent);}
+  .main-nav-item.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .mni-icon{font-size:17px;line-height:1;}
+
+  /* ── SUBNAV ── */
+  .sub-nav{
+    display:none;background:var(--card);border-bottom:1px solid var(--border);
+    overflow-x:auto;scrollbar-width:none;
+    position:fixed;top:calc(var(--hdr-h) + var(--tabs-h));left:0;right:0;z-index:98;
+    height:var(--sub-h);box-sizing:border-box;
+  }
+  .sub-nav::-webkit-scrollbar{display:none;}
+  .sub-nav.visible{display:flex;}
+  .sub-nav-item{
+    font-family:var(--fd);font-size:11px;letter-spacing:1.5px;padding:0 16px;
+    color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;
+    white-space:nowrap;transition:color .15s,border-color .15s;
+    display:flex;align-items:center;flex-shrink:0;
+  }
+  .sub-nav-item.active{color:var(--white);border-bottom-color:var(--white);}
 
   /* ── CONTENT ── */
-  .content{padding:16px;padding-top:calc(var(--bar-h) + 12px);display:none;}
+  .content{padding:16px;padding-top:calc(var(--hdr-h) + var(--tabs-h) + 12px);display:none;}
+  body.show-subnav .content{padding-top:calc(var(--hdr-h) + var(--tabs-h) + var(--sub-h) + 12px);}
   .content.active{display:block;}
 
   /* ── CARDS ── */
@@ -321,18 +341,14 @@
   <div class="hdr-btns"><span id="sync-status" style="font-size:9px;letter-spacing:1px;color:var(--muted);flex-shrink:0;white-space:nowrap">☁️ –</span><button class="btn-sec" onclick="openKassa()" style="color:var(--green);border:none;background:none;padding:6px 8px">🛒</button><button class="btn-sec" onclick="openModal('modal-inkoop')" style="color:var(--red);border:none;background:none;padding:6px 8px">+ INKOOP</button><button class="btn-sec" onclick="openModal('modal-verkoop')" style="color:var(--accent);border:none;background:none;padding:6px 8px">+ VERKOOP</button></div>
 </div>
 
-<div class="tabs" id="tabs-bar">
-  <div class="tab active"  onclick="showTab('dashboard')">DASHBOARD</div>
-  <div class="tab"         onclick="showTab('financieel')">FINANCIEEL</div>
-  <div class="tab"         onclick="showTab('voorraad')">VOORRAAD</div>
-  <div class="tab"         onclick="showTab('overzicht')">OVERZICHT</div>
-  <div class="tab"         onclick="showTab('verkoop')">VERKOOP</div>
-  <div class="tab"         onclick="showTab('inkoop')">INKOOP</div>
-  <div class="tab"         onclick="showTab('tickets')">TICKETS</div>
-  <div class="tab"         onclick="showTab('lineup')">LINEUP</div>
-  <div class="tab"         onclick="showTab('afgerond')">AFGEROND</div>
-  <div class="tab"         onclick="showTab('producten')">PRODUCTEN</div>
-</div>
+<nav class="main-nav" id="main-nav">
+  <button class="main-nav-item active" data-group="home"     onclick="showMainTab('home')"><span class="mni-icon">🏠</span>HOME</button>
+  <button class="main-nav-item"        data-group="orders"   onclick="showMainTab('orders')"><span class="mni-icon">🛒</span>ORDERS</button>
+  <button class="main-nav-item"        data-group="voorraad" onclick="showMainTab('voorraad')"><span class="mni-icon">📦</span>VOORRAAD</button>
+  <button class="main-nav-item"        data-group="lineup"   onclick="showMainTab('lineup')"><span class="mni-icon">🎵</span>LINEUP</button>
+  <button class="main-nav-item"        data-group="beheer"   onclick="showMainTab('beheer')"><span class="mni-icon">⚙️</span>BEHEER</button>
+</nav>
+<div class="sub-nav" id="sub-nav"></div>
 
 <!-- DASHBOARD -->
 <div class="content active" id="tab-dashboard">
@@ -628,7 +644,7 @@
     <div class="modal-title">VERKOOPORDER</div>
     <div class="form-group"><label class="form-label">Naam klant</label><input class="form-input" type="text" id="vk-naam" placeholder="Naam klant..."></div>
     <div class="form-group"><label class="form-label">Artikelen</label><div id="vk-items-wrap"></div><button class="btn-sec" onclick="addVkItem()" style="width:100%;margin-top:8px;color:var(--accent);border-color:var(--accent)">+ ARTIKEL TOEVOEGEN</button></div>
-    <div class="form-group"><label class="form-label">Levering</label><div class="grid2"><button class="sel-btn" onclick="sel(this,'vk-levering','verzenden')">📦 Verzenden</button><button class="sel-btn" onclick="sel(this,'vk-levering','langsbrengen')">🚗 Langsbrengen</button><button class="sel-btn" onclick="sel(this,'vk-levering','festival')">🎪 Festival</button><button class="sel-btn" onclick="sel(this,'vk-levering','reserveren')">🔒 Reserveren</button><button class="sel-btn" onclick="sel(this,'vk-levering','intern')" style="grid-column:1/-1">🎽 Interne uitgifte</button></div></div>
+    <div class="form-group"><label class="form-label">Levering</label><div class="grid2"><button class="sel-btn" onclick="sel(this,'vk-levering','verzenden')">📦 Verzenden</button><button class="sel-btn" onclick="sel(this,'vk-levering','langsbrengen')">🚗 Langsbrengen</button><button class="sel-btn" onclick="sel(this,'vk-levering','festival')">🎪 Festival</button><button class="sel-btn" onclick="sel(this,'vk-levering','reserveren')" title="Artikel opzijleggen — voorraad wordt nog niet afgeschreven">🔒 Reserveren (wachten)</button><button class="sel-btn" onclick="sel(this,'vk-levering','intern')" style="grid-column:1/-1" title="Voor vrijwilligers, crew of intern gebruik — telt niet mee in omzet">🎽 Intern (crew/vrijwilliger)</button></div></div>
     <div class="info-box" id="vk-vrzd-info" style="display:none">📦 Verzendkosten €<span id="vk-vrzd-amt">6,95</span> worden berekend bij afsluiten.</div>
     <div id="vk-adres-wrap" style="display:none">
       <div class="form-group"><label class="form-label">Straat + huisnummer</label><input class="form-input" type="text" id="vk-adres" placeholder="Bijv. Dorpsstraat 12"></div>
@@ -713,7 +729,7 @@
     <button class="modal-close" onclick="closeModal('modal-product')">✕</button>
     <div class="modal-title" id="prod-modal-title">NIEUW PRODUCT</div>
     <div class="form-group"><label class="form-label">Naam</label><input class="form-input" type="text" id="prod-naam" placeholder="Bijv. Snapback Cap"></div>
-    <div class="form-group"><label class="form-label">Type</label><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="prod-type-grid"><button class="sel-btn" onclick="sel(this,'prod-type','merch')">🧢 Merchandise</button><button class="sel-btn" onclick="sel(this,'prod-type','consumable')">🍺 Consumable</button><button class="sel-btn" onclick="sel(this,'prod-type','service')">⚙️ Service</button></div></div>
+    <div class="form-group"><label class="form-label">Type</label><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" id="prod-type-grid"><button class="sel-btn" onclick="sel(this,'prod-type','merch')">🧢 Merchandise</button><button class="sel-btn" onclick="sel(this,'prod-type','consumable')">🍺 Drank/Verbruik</button><button class="sel-btn" onclick="sel(this,'prod-type','service')">⚙️ Service</button></div></div>
     <div class="form-group"><label class="form-label">Icoon (emoji)</label><input class="form-input" type="text" id="prod-icon" placeholder="🧢" maxlength="4"></div>
     <div class="form-group"><label class="form-label">Standaard inkoopprijs (€)</label><input class="form-input" type="number" step="0.01" id="prod-inkoop" value="0.00"></div>
     <div class="form-group"><label class="form-label">Standaard verkoopprijs (€)</label><input class="form-input" type="number" step="0.01" id="prod-verkoop" value="0.00"></div>
@@ -1019,6 +1035,8 @@ function renderAll(){
   var active=document.querySelector('.content.active');
   if(!active)return;
   var id=active.id;
+  // nav bijwerken na cloud sync
+  try{updateNav(id.replace('tab-',''));}catch(e){}
   var map={
     'tab-dashboard':renderDashboard,'tab-financieel':renderFinancieel,
     'tab-voorraad':renderVoorraad,'tab-overzicht':renderOverzicht,
@@ -1250,21 +1268,59 @@ function hideLanding(tab){
 }
 
 // ════════════════════════════════════════════════════
-// TABS
+// NAVIGATIE — 5 hoofdgroepen met subnav
 // ════════════════════════════════════════════════════
-var TAB_NAMES=['dashboard','financieel','voorraad','overzicht','verkoop','inkoop','tickets','lineup','afgerond','producten'];
+var TAB_GROUPS={
+  home:    {tabs:['dashboard'],                           icon:'🏠'},
+  orders:  {tabs:['verkoop','inkoop','overzicht','afgerond'], icon:'🛒'},
+  voorraad:{tabs:['voorraad'],                            icon:'📦'},
+  lineup:  {tabs:['lineup','tickets'],                    icon:'🎵'},
+  beheer:  {tabs:['financieel','producten'],              icon:'⚙️'}
+};
+var SUB_LABELS={
+  dashboard:'HOME', verkoop:'VERKOOP', inkoop:'INKOOP',
+  overzicht:'OVERZICHT', afgerond:'ARCHIEF',
+  voorraad:'VOORRAAD', lineup:'LINEUP', tickets:'TICKETS',
+  financieel:'FINANCIEEL', producten:'PRODUCTEN'
+};
+function getGroupForTab(name){
+  for(var g in TAB_GROUPS){if(TAB_GROUPS[g].tabs.indexOf(name)>-1)return g;}
+  return 'home';
+}
+function showMainTab(group){
+  var grp=TAB_GROUPS[group];if(!grp)return;
+  showTab(grp.tabs[0]);
+}
+function updateNav(name){
+  var group=getGroupForTab(name);
+  // Hoofdnav
+  document.querySelectorAll('.main-nav-item').forEach(function(b){
+    b.classList.toggle('active',b.getAttribute('data-group')===group);
+  });
+  // Subnav
+  var subNav=document.getElementById('sub-nav');if(!subNav)return;
+  var tabs=TAB_GROUPS[group].tabs;
+  if(tabs.length>1){
+    subNav.className='sub-nav visible';
+    subNav.innerHTML=tabs.map(function(t){
+      return '<div class="sub-nav-item'+(t===name?' active':'')+'" onclick="showTab(\''+t+'\')">'+SUB_LABELS[t]+'</div>';
+    }).join('');
+    document.body.classList.add('show-subnav');
+  } else {
+    subNav.className='sub-nav';
+    subNav.innerHTML='';
+    document.body.classList.remove('show-subnav');
+  }
+}
 function showTab(name){
   document.querySelectorAll('.content').forEach(function(c){c.classList.remove('active');});
-  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   var content=document.getElementById('tab-'+name);
   if(content)content.classList.add('active');
-  var idx=TAB_NAMES.indexOf(name);
-  var tabs=document.querySelectorAll('.tab');
-  if(tabs[idx])tabs[idx].classList.add('active');
   var renders={dashboard:renderDashboard,voorraad:renderVoorraad,verkoop:renderVerkoop,
     inkoop:renderInkoop,afgerond:renderAfgerond,financieel:renderFinancieel,
     tickets:renderTickets,overzicht:renderOverzicht,producten:renderProducten};
   if(renders[name])renders[name]();
+  updateNav(name);
 }
 
 // ════════════════════════════════════════════════════
@@ -1316,6 +1372,55 @@ function showToast(msg){
   var t=document.getElementById('toast');
   t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2200);
+}
+
+// ════════════════════════════════════════════════════
+// PAKBON PRINTEN
+// ════════════════════════════════════════════════════
+function printPakbon(id){
+  var o=S.verkoopOrders.find(function(x){return x.id===id;});if(!o)return;
+  var items=getOrderItems(o);
+  var totaalOmzet=0;
+  var regels=items.map(function(i){
+    var p=getProd(i.prodId);var v=getVar(p,i.variantId);
+    var pr=(i.prijs!=null)?i.prijs:(p?p.verkoop:0);
+    var regel=(i.aantal||1)*pr;totaalOmzet+=regel;
+    return '<tr><td>'+(p?escHtml(p.naam):'–')+(v?' – '+escHtml(v.naam):'')+'</td>'
+      +'<td style="text-align:center">'+(i.aantal||1)+'</td>'
+      +'<td style="text-align:right">'+fmt(pr)+'</td>'
+      +'<td style="text-align:right">'+fmt(regel)+'</td></tr>';
+  }).join('');
+  var adresBlok=o.levering==='verzenden'&&(o.adres||o.stad)?
+    '<p>'+escHtml(o.adres||'')+'<br>'+escHtml((o.postcode||'')+' '+(o.stad||''))+'</p>':'';
+  var html='<!DOCTYPE html><html lang="nl"><head><meta charset="UTF-8">'
+    +'<title>Pakbon – '+escHtml(o.naam)+'</title>'
+    +'<style>body{font-family:Arial,sans-serif;font-size:13px;color:#000;padding:24px;max-width:600px;margin:0 auto}'
+    +'h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:0 0 16px;color:#555}'
+    +'.kop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #000}'
+    +'table{width:100%;border-collapse:collapse;margin-bottom:16px}'
+    +'th{text-align:left;border-bottom:2px solid #000;padding:6px 4px;font-size:11px;text-transform:uppercase}'
+    +'td{padding:6px 4px;border-bottom:1px solid #ddd}'
+    +'.totaal{text-align:right;font-size:16px;font-weight:bold;padding-top:8px}'
+    +'.status{display:inline-block;padding:3px 10px;border-radius:3px;font-size:11px;font-weight:bold}'
+    +'.betaald{background:#d4edda;color:#155724}.open{background:#fff3cd;color:#856404}'
+    +'@media print{button{display:none}}'
+    +'</style></head><body>'
+    +'<div class="kop"><div><h1>KERKWERVE SUMMERVIBE</h1><h2>PAKBON / VERKOOPORDER</h2></div>'
+    +'<div style="text-align:right"><div style="font-size:11px;color:#555">Datum: '+displayDate(o.datum)+'</div>'
+    +'<div style="font-size:11px;color:#555">Order: '+o.id+'</div></div></div>'
+    +'<div style="margin-bottom:16px"><strong>Klant:</strong> '+escHtml(o.naam)+'</div>'
+    +(adresBlok?'<div style="margin-bottom:16px"><strong>Verzendadres:</strong><br>'+adresBlok+'</div>':'')
+    +'<table><thead><tr><th>Product</th><th style="text-align:center">Aantal</th><th style="text-align:right">Prijs</th><th style="text-align:right">Subtotaal</th></tr></thead>'
+    +'<tbody>'+regels+'</tbody></table>'
+    +'<div class="totaal">Totaal: '+fmt(totaalOmzet)+'</div>'
+    +'<div style="margin-top:12px"><span class="status '+(o.betaling==='betaald'?'betaald':'open')+'">'+(o.betaling==='betaald'?'✓ BETAALD':'⏳ BETALING OPEN')+'</span></div>'
+    +(o.notitie?'<div style="margin-top:12px;font-size:11px;color:#555">Notitie: '+escHtml(o.notitie)+'</div>':'')
+    +'<div style="margin-top:32px;font-size:10px;color:#aaa;text-align:center">29 augustus 2026 · Kerkwerve, Zeeland · KSV Beheer</div>'
+    +'<script>window.onload=function(){window.print();}<\/script>'
+    +'</body></html>';
+  var win=window.open('','_blank','width=700,height=900');
+  if(win){win.document.write(html);win.document.close();}
+  else{showToast('POP-UP GEBLOKKEERD — sta pop-ups toe');}
 }
 
 // ════════════════════════════════════════════════════
@@ -1891,11 +1996,13 @@ function orderCard(o,closed){
     html+='<button class="btn-sec '+(betalingOk?'btn-green':'btn-orange')+'" data-actie="betalen" onclick="vkActie(this)">'+(betalingOk?'💰 BETAALD':'⏳ BETALEN')+'</button>';
     html+='<button class="btn-sec" data-actie="edit" onclick="vkActie(this)">EDIT</button>';
     html+='<button class="btn-sec" data-actie="sluiten" onclick="vkActie(this)" style="color:var(--green);border-color:var(--green)">✓ AFRONDEN</button>';
+    html+='<button class="btn-sec" onclick="printPakbon(\''+o.id+'\')" style="color:var(--blue);border-color:var(--blue)" title="Pakbon afdrukken">🖨️</button>';
     html+='<button class="btn-danger" data-actie="verwijder" onclick="vkActie(this)">✕</button>';
     html+='</div>';
   } else {
     html+='<div style="margin-top:8px;display:flex;gap:8px;align-items:center">';
     html+='<div style="font-size:10px;color:var(--muted);flex:1">Gesloten op '+(o.sluitDatum||'–')+'</div>';
+    html+='<button class="btn-sec" onclick="printPakbon(\''+o.id+'\')" style="color:var(--blue);border-color:var(--blue);font-size:11px">🖨️</button>';
     html+='<button class="btn-sec" data-actie="heropen" onclick="vkActie(this)" style="color:var(--orange);border-color:var(--orange);font-size:11px">HEROPENEN</button>';
     html+='<button class="btn-danger" data-actie="verwijder" onclick="vkActie(this)">✕</button></div>';
   }
@@ -2122,7 +2229,7 @@ function renderOverzicht(){
       });
     });
     var totStock=0;vList.forEach(function(v){totStock+=getStock(prod.id,v.id);});
-    var badge=tp==='service'?'⚙️ SERVICE':tp==='consumable'?'🍺 CONSUMABLE':'🧢 MERCHANDISE';
+    var badge=tp==='service'?'⚙️ SERVICE':tp==='consumable'?'🍺 DRANK/VERBRUIK':'🧢 MERCHANDISE';
     html+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div class="card-title" style="margin-bottom:0">'+(prod.icon||'')+' '+escHtml(prod.naam)+'</div><span class="tag tag-accent">'+badge+'</span></div>';
     if(tp==='merch'){
       html+='<div class="stat-row"><span class="stat-label">In stock</span><span class="stat-value accent">'+totStock+'</span></div>';
@@ -2161,7 +2268,7 @@ function renderProducten(){
     var varDots=(p.varianten||[]).map(function(v){return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+(v.kleur||'#555')+';margin-right:3px;vertical-align:middle"></span>'+v.naam;}).join(' · ');
     return '<div class="product-card"><div class="product-icon">'+(p.icon||'📦')+'</div>'
       +'<div class="product-info"><div class="product-name">'+p.naam+'</div>'
-      +'<div class="product-sub">Inkoop: '+fmt(p.inkoop)+' · Verkoop: '+fmt(p.verkoop)+' · <span style="color:var(--accent)">'+(p.type==='service'?'⚙️ Service':p.type==='consumable'?'🍺 Consumable':'🧢 Merch')+'</span></div>'
+      +'<div class="product-sub">Inkoop: '+fmt(p.inkoop)+' · Verkoop: '+fmt(p.verkoop)+' · <span style="color:var(--accent)">'+(p.type==='service'?'⚙️ Service':p.type==='consumable'?'🍺 Drank/Verbruik':'🧢 Merch')+'</span></div>'
       +'<div class="product-sub" style="margin-top:2px">'+varDots+'</div></div>'
       +'<div style="display:flex;flex-direction:column;gap:4px">'
       +'<button class="btn-sec" style="font-size:11px;padding:6px 10px" onclick="editProduct(\''+p.id+'\')">EDIT</button>'
