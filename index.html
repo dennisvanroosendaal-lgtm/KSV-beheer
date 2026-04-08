@@ -2,13 +2,13 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KSV – Beheer</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap');
   :root {
     --black:#0a0a0a; --dark:#111; --card:#161616; --border:rgba(255,255,255,0.07);
-    --white:#f5f0e8; --muted:rgba(245,240,232,0.38); --accent:#ffdd00;
+    --white:#f5f0e8; --muted:rgba(245,240,232,0.55); --accent:#ffdd00;
     --green:#4ade80; --red:#f87171; --blue:#60a5fa; --orange:#fb923c;
     --fd:'Bebas Neue','Impact',sans-serif; --fm:'Space Mono','Courier New',monospace;
     --hdr-h:41px;
@@ -224,6 +224,32 @@
     .hdr-btns .btn-sec{padding:6px 8px;font-size:10px;}
   }
 
+  /* ── KASSA-MODUS ── */
+  #modal-kassa .modal{max-height:95vh;padding-bottom:20px;}
+  .kassa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+  @media(min-width:480px){.kassa-grid{grid-template-columns:repeat(4,1fr);}}
+  .kassa-tile{
+    background:rgba(255,255,255,0.05);border:1.5px solid var(--border);border-radius:6px;
+    padding:10px 6px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+    position:relative;
+  }
+  .kassa-tile:active{background:rgba(255,221,0,0.08);border-color:var(--accent);}
+  .kassa-tile.out-of-stock{opacity:.35;pointer-events:none;}
+  .kassa-tile-icon{font-size:26px;margin-bottom:4px;}
+  .kassa-tile-naam{font-family:var(--fd);font-size:12px;letter-spacing:1px;line-height:1.2;margin-bottom:2px;}
+  .kassa-tile-prijs{font-family:var(--fd);font-size:14px;color:var(--accent);}
+  .kassa-tile-stock{font-size:9px;color:var(--muted);margin-top:2px;}
+  .kassa-var-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;}
+  .kassa-cart{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:12px;}
+  .kassa-cart-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);}
+  .kassa-cart-item:last-child{border-bottom:none;}
+  .kassa-cart-naam{font-family:var(--fd);font-size:13px;}
+  .kassa-cart-sub{font-size:10px;color:var(--muted);}
+  .kassa-cart-prijs{font-family:var(--fd);font-size:16px;color:var(--green);}
+  .kassa-totaal{display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:4px;border-top:2px solid var(--border);}
+  .kassa-totaal-lbl{font-family:var(--fd);font-size:14px;letter-spacing:2px;color:var(--muted);}
+  .kassa-totaal-val{font-family:var(--fd);font-size:28px;color:var(--accent);}
+
   /* ── WACHTWOORDSCHERM ── */
   #ksv-auth{
     position:fixed;inset:0;z-index:99999;
@@ -292,7 +318,7 @@
 <div class="app-header">
   
   <div class="app-title" id="home-btn" style="cursor:pointer" title="Startpagina">KERKWERVE <span>SUMMERVIBE</span></div>
-  <div class="hdr-btns"><span id="sync-status" style="font-size:9px;letter-spacing:1px;color:var(--muted);flex-shrink:0;white-space:nowrap">☁️ –</span><button class="btn-sec" onclick="openModal('modal-inkoop')" style="color:var(--red);border:none;background:none;padding:6px 8px">+ INKOOP</button><button class="btn-sec" onclick="openModal('modal-verkoop')" style="color:var(--accent);border:none;background:none;padding:6px 8px">+ VERKOOP</button></div>
+  <div class="hdr-btns"><span id="sync-status" style="font-size:9px;letter-spacing:1px;color:var(--muted);flex-shrink:0;white-space:nowrap">☁️ –</span><button class="btn-sec" onclick="openKassa()" style="color:var(--green);border:none;background:none;padding:6px 8px">🛒</button><button class="btn-sec" onclick="openModal('modal-inkoop')" style="color:var(--red);border:none;background:none;padding:6px 8px">+ INKOOP</button><button class="btn-sec" onclick="openModal('modal-verkoop')" style="color:var(--accent);border:none;background:none;padding:6px 8px">+ VERKOOP</button></div>
 </div>
 
 <div class="tabs" id="tabs-bar">
@@ -335,6 +361,10 @@
     </div>
   </div>
   <div id="dash-alerts"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+    <button class="btn-primary" onclick="openKassa()" style="font-size:15px;letter-spacing:2px;padding:16px 8px;background:var(--green);color:#000">🛒 KASSA</button>
+    <button class="btn-primary" onclick="openModal('modal-afboek')" style="font-size:15px;letter-spacing:2px;padding:16px 8px;background:var(--orange);color:#000">🍺 AFREKENEN</button>
+  </div>
 
   <!-- ── GRAFIEKEN ── -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
@@ -415,6 +445,7 @@
 
 <!-- INKOOP -->
 <div class="content" id="tab-inkoop">
+  <input class="search-bar" type="text" id="ink-search" placeholder="🔍 Zoek op leverancier..." oninput="renderInkoop()" style="margin-bottom:10px">
   <div id="inkoop-list"></div>
 </div>
 
@@ -571,6 +602,7 @@
     <div class="section-ttl">PRODUCTEN</div>
     <button class="btn-sec" onclick="openModal('modal-product')">+ NIEUW</button>
   </div>
+  <input class="search-bar" type="text" id="prod-search" placeholder="🔍 Zoek product..." oninput="renderProducten()" style="margin-bottom:10px">
   <div id="product-list"></div>
 </div>
 
@@ -598,6 +630,13 @@
     <div class="form-group"><label class="form-label">Artikelen</label><div id="vk-items-wrap"></div><button class="btn-sec" onclick="addVkItem()" style="width:100%;margin-top:8px;color:var(--accent);border-color:var(--accent)">+ ARTIKEL TOEVOEGEN</button></div>
     <div class="form-group"><label class="form-label">Levering</label><div class="grid2"><button class="sel-btn" onclick="sel(this,'vk-levering','verzenden')">📦 Verzenden</button><button class="sel-btn" onclick="sel(this,'vk-levering','langsbrengen')">🚗 Langsbrengen</button><button class="sel-btn" onclick="sel(this,'vk-levering','festival')">🎪 Festival</button><button class="sel-btn" onclick="sel(this,'vk-levering','reserveren')">🔒 Reserveren</button><button class="sel-btn" onclick="sel(this,'vk-levering','intern')" style="grid-column:1/-1">🎽 Interne uitgifte</button></div></div>
     <div class="info-box" id="vk-vrzd-info" style="display:none">📦 Verzendkosten €<span id="vk-vrzd-amt">6,95</span> worden berekend bij afsluiten.</div>
+    <div id="vk-adres-wrap" style="display:none">
+      <div class="form-group"><label class="form-label">Straat + huisnummer</label><input class="form-input" type="text" id="vk-adres" placeholder="Bijv. Dorpsstraat 12"></div>
+      <div class="grid2">
+        <div class="form-group"><label class="form-label">Postcode</label><input class="form-input" type="text" id="vk-postcode" placeholder="1234 AB"></div>
+        <div class="form-group"><label class="form-label">Stad</label><input class="form-input" type="text" id="vk-stad" placeholder="Amsterdam"></div>
+      </div>
+    </div>
     <div class="form-group"><label class="form-label">Betaling ontvangen?</label><div class="grid2"><button class="sel-btn" onclick="sel(this,'vk-betaling','betaald')">✅ Betaald</button><button class="sel-btn" onclick="sel(this,'vk-betaling','onbetaald')">⏳ Nog betalen</button></div></div>
     <div class="form-group"><label class="form-label">Notitie</label><input class="form-input" type="text" id="vk-notitie" placeholder="Adres, opmerking..."></div>
     <button class="btn-primary" onclick="saveVerkoop()">ORDER OPSLAAN</button>
@@ -630,6 +669,41 @@
     <div class="info-box">🍺 Voer in hoeveel er verbruikt is. De rest gaat retour.</div>
     <div id="afboek-items-wrap"></div>
     <button class="btn-primary" onclick="slaAfboekOp()">VERBRUIK OPSLAAN</button>
+  </div>
+</div>
+
+<!-- MODAL: KASSA -->
+<div class="modal-overlay" id="modal-kassa">
+  <div class="modal">
+    <button class="modal-close" onclick="closeKassa()">✕</button>
+    <div class="modal-title">🛒 KASSA</div>
+    <div class="info-box" style="margin-bottom:10px">Tik een product aan om toe te voegen. Varianten verschijnen direct onder het product.</div>
+    <div id="kassa-producten" class="kassa-grid"></div>
+    <div id="kassa-var-picker" style="display:none;margin-bottom:12px;padding:10px;background:rgba(255,221,0,0.05);border:1px solid rgba(255,221,0,0.2);border-radius:4px">
+      <div style="font-size:10px;letter-spacing:2px;color:var(--accent);margin-bottom:8px" id="kassa-var-titel">KIES VARIANT</div>
+      <div class="kassa-var-row" id="kassa-var-knoppen"></div>
+    </div>
+    <div id="kassa-cart-wrap">
+      <div class="kassa-cart" id="kassa-cart-items">
+        <div class="empty" style="padding:12px">Nog geen artikelen</div>
+      </div>
+      <div class="kassa-totaal">
+        <span class="kassa-totaal-lbl">TOTAAL</span>
+        <span class="kassa-totaal-val" id="kassa-totaal">€0,00</span>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label class="form-label">Naam klant (optioneel)</label>
+      <input class="form-input" type="text" id="kassa-naam" placeholder="Laat leeg voor anoniem">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Betaling</label>
+      <div class="grid2">
+        <button class="sel-btn selected" id="kassa-bet-betaald" onclick="kassaBetaling('betaald')">✅ Betaald</button>
+        <button class="sel-btn" id="kassa-bet-open" onclick="kassaBetaling('onbetaald')">⏳ Nog betalen</button>
+      </div>
+    </div>
+    <button class="btn-primary" id="kassa-checkout-btn" onclick="kassaCheckout()" style="background:var(--green);color:#000" disabled>AFREKENEN</button>
   </div>
 </div>
 
@@ -1230,6 +1304,8 @@ function sel(el,group,val){
     if(vi)vi.style.display=val==='verzenden'?'block':'none';
     var va=document.getElementById('vk-vrzd-amt');
     if(va)va.textContent=(S.settings.verzend||6.95).toFixed(2);
+    var aw=document.getElementById('vk-adres-wrap');
+    if(aw)aw.style.display=val==='verzenden'?'block':'none';
   }
 }
 
@@ -1240,6 +1316,140 @@ function showToast(msg){
   var t=document.getElementById('toast');
   t.textContent=msg;t.classList.add('show');
   setTimeout(function(){t.classList.remove('show');},2200);
+}
+
+// ════════════════════════════════════════════════════
+// KASSA-MODUS
+// ════════════════════════════════════════════════════
+var _kassaCart=[];
+var _kassaBetaling='betaald';
+var _kassaPendingProd=null;
+
+function openKassa(){
+  _kassaCart=[];_kassaBetaling='betaald';_kassaPendingProd=null;
+  var el=document.getElementById('modal-kassa');if(el)el.classList.add('open');
+  var ni=document.getElementById('kassa-naam');if(ni)ni.value='';
+  document.getElementById('kassa-var-picker').style.display='none';
+  renderKassaProducten();
+  renderKassaCart();
+}
+function closeKassa(){
+  var el=document.getElementById('modal-kassa');if(el)el.classList.remove('open');
+}
+function kassaBetaling(v){
+  _kassaBetaling=v;
+  document.getElementById('kassa-bet-betaald').classList.toggle('selected',v==='betaald');
+  document.getElementById('kassa-bet-open').classList.toggle('selected',v==='onbetaald');
+}
+function renderKassaProducten(){
+  var wrap=document.getElementById('kassa-producten');if(!wrap)return;
+  var merch=S.producten.filter(function(p){return p.type!=='service';});
+  if(!merch.length){wrap.innerHTML='<div class="empty" style="grid-column:1/-1">Geen producten. Voeg producten toe via de Producten tab.</div>';return;}
+  wrap.innerHTML=merch.map(function(p){
+    var totStock=0;
+    (p.varianten&&p.varianten.length?p.varianten:[{id:null}]).forEach(function(v){totStock+=getStock(p.id,v.id);});
+    var uitverkocht=totStock<=0;
+    return '<div class="kassa-tile'+(uitverkocht?' out-of-stock':'')+'" onclick="kassaTikProduct(\''+p.id+'\')">'
+      +'<div class="kassa-tile-icon">'+(p.icon||'📦')+'</div>'
+      +'<div class="kassa-tile-naam">'+escHtml(p.naam)+'</div>'
+      +'<div class="kassa-tile-prijs">'+fmt(p.verkoop)+'</div>'
+      +'<div class="kassa-tile-stock">'+(uitverkocht?'UITVERKOCHT':totStock+' stuks')+'</div>'
+      +'</div>';
+  }).join('');
+}
+function kassaTikProduct(prodId){
+  var prod=getProd(prodId);if(!prod)return;
+  if(prod.varianten&&prod.varianten.length){
+    _kassaPendingProd=prodId;
+    var picker=document.getElementById('kassa-var-picker');
+    var titel=document.getElementById('kassa-var-titel');
+    var knoppen=document.getElementById('kassa-var-knoppen');
+    if(titel)titel.textContent='KIES VARIANT — '+(prod.naam||'').toUpperCase();
+    if(knoppen){
+      knoppen.innerHTML=prod.varianten.map(function(v){
+        var st=getStock(prodId,v.id);
+        return '<button class="sel-btn" style="flex:0 0 auto;'+(st<=0?'opacity:.35;pointer-events:none;':'')+'" onclick="kassaKiesVariant(\''+v.id+'\')">'
+          +'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+(v.kleur||'#888')+';margin-right:5px"></span>'
+          +escHtml(v.naam)+' ('+st+')</button>';
+      }).join('');
+    }
+    if(picker)picker.style.display='block';
+    picker.scrollIntoView({behavior:'smooth',block:'nearest'});
+  } else {
+    kassaVoegToe(prodId,null);
+  }
+}
+function kassaKiesVariant(varId){
+  if(!_kassaPendingProd)return;
+  kassaVoegToe(_kassaPendingProd,varId);
+  _kassaPendingProd=null;
+  var picker=document.getElementById('kassa-var-picker');
+  if(picker)picker.style.display='none';
+}
+function kassaVoegToe(prodId,varId){
+  var prod=getProd(prodId);if(!prod)return;
+  var stock=getStock(prodId,varId);
+  var inCart=_kassaCart.reduce(function(s,i){return s+(i.prodId===prodId&&(i.varId||null)===(varId||null)?i.aantal:0);},0);
+  if(stock-inCart<=0){showToast('ONVOLDOENDE VOORRAAD');return;}
+  var bestaand=_kassaCart.find(function(i){return i.prodId===prodId&&(i.varId||null)===(varId||null);});
+  if(bestaand){bestaand.aantal++;}
+  else{var v=getVar(prod,varId);_kassaCart.push({prodId:prodId,varId:varId,naam:prod.naam+(v?' – '+v.naam:''),prijs:prod.verkoop,kleur:v?v.kleur:null,aantal:1});}
+  renderKassaCart();
+  showToast('TOEGEVOEGD ✓');
+}
+function kassaVerwijder(idx){
+  _kassaCart.splice(idx,1);
+  renderKassaCart();
+}
+function renderKassaCart(){
+  var wrap=document.getElementById('kassa-cart-items');
+  var totaalEl=document.getElementById('kassa-totaal');
+  var btn=document.getElementById('kassa-checkout-btn');
+  if(!_kassaCart.length){
+    if(wrap)wrap.innerHTML='<div class="empty" style="padding:12px">Nog geen artikelen</div>';
+    if(totaalEl)totaalEl.textContent='€0,00';
+    if(btn)btn.disabled=true;
+    return;
+  }
+  var totaal=0;
+  if(wrap){
+    wrap.innerHTML=_kassaCart.map(function(item,idx){
+      var sub=item.aantal+'x '+fmt(item.prijs);
+      var regel=item.aantal*item.prijs;totaal+=regel;
+      return '<div class="kassa-cart-item">'
+        +'<div><div class="kassa-cart-naam">'+(item.kleur?'<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+item.kleur+';margin-right:5px;vertical-align:middle"></span>':'')+escHtml(item.naam)+'</div>'
+        +'<div class="kassa-cart-sub">'+sub+'</div></div>'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<span class="kassa-cart-prijs">'+fmt(regel)+'</span>'
+        +'<button class="btn-danger" style="padding:3px 8px;font-size:12px" onclick="kassaVerwijder('+idx+')">✕</button></div>'
+        +'</div>';
+    }).join('');
+  }
+  if(totaalEl)totaalEl.textContent=fmt(totaal);
+  if(btn)btn.disabled=false;
+}
+function kassaCheckout(){
+  if(!_kassaCart.length){showToast('VOEG EERST ARTIKELEN TOE');return;}
+  var naam=(document.getElementById('kassa-naam').value.trim())||('Kassa '+today());
+  var items=_kassaCart.map(function(i){return {prodId:i.prodId,variantId:i.varId||null,aantal:i.aantal,prijs:i.prijs};});
+  var stockErr=null;
+  items.forEach(function(i){
+    if(stockErr)return;
+    var avail=Math.max(0,getStock(i.prodId,i.variantId)-getReserved(i.prodId,i.variantId));
+    if(avail<i.aantal){var p=getProd(i.prodId);stockErr='ONVOLDOENDE VOORRAAD: '+(p?p.naam:'');}
+  });
+  if(stockErr){showToast(stockErr);return;}
+  items.forEach(function(i){addStock(i.prodId,i.variantId,-i.aantal);});
+  S.verkoopOrders.push({
+    id:uid(),naam:naam,items:items,
+    prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,
+    levering:'festival',betaling:_kassaBetaling,status:'festival',
+    datum:today(),notitie:'',adres:'',postcode:'',stad:'',
+    gesloten:true,sluitDatum:today(),voorraadAfgeboekt:true,onderprijs:false
+  });
+  save();closeKassa();
+  renderVerkoop();renderVoorraad();renderDashboard();renderFinancieel();renderAfgerond();
+  showToast('✅ VERKOOP GEREGISTREERD — '+naam);
 }
 
 // ════════════════════════════════════════════════════
@@ -1663,6 +1873,7 @@ function orderCard(o,closed){
   html+='<span class="tag '+(STATUS_TAG[o.status]||'')+'">'+(STATUS_LBL[o.status]||o.status)+'</span>';
   html+='<span class="tag '+(betalingOk?'tag-green':'tag-orange')+'">'+(betalingOk?'💰 BETAALD':'⏳ OPEN')+'</span>';
   html+='<span class="tag '+(geleverd?'tag-green':'tag-orange')+'">'+(geleverd?'✅ GELEVERD':'🕐 TE LEVEREN')+'</span></div>';
+  if(o.adres||o.stad)html+='<div style="font-size:10px;color:var(--blue);margin-bottom:4px">📦 '+escHtml([o.adres,o.postcode,o.stad].filter(Boolean).join(', '))+'</div>';
   if(o.notitie)html+='<div style="font-size:10px;color:var(--muted);margin-bottom:8px">'+escHtml(o.notitie)+'</div>';
   // [NIEUW - PROBLEEM 1] Waarschuwing als verkoopprijs onder inkoopprijs ligt
   if(o.onderprijs)html+='<div style="font-size:10px;color:var(--orange);margin-bottom:8px;padding:5px 8px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.2);border-radius:2px">⚠️ Verkoopprijs ligt onder inkoopprijs</div>';
@@ -1752,6 +1963,8 @@ function delVkOrder(id){
 function renderInkoop(){
   var list=document.getElementById('inkoop-list');
   var open=S.inkoopOrders.filter(function(o){return !o.ontvangen;});
+  var q=((document.getElementById('ink-search')||{}).value||'').toLowerCase().trim();
+  if(q)open=open.filter(function(o){return (o.leverancier||'').toLowerCase().includes(q)||(o.notitie||'').toLowerCase().includes(q);});
   if(!open.length){list.innerHTML='<div class="empty"><div style="font-size:32px;margin-bottom:8px">📦</div>Geen open inkooporders</div>';return;}
   list.innerHTML=open.slice().reverse().map(function(o){
     var totaal=(o.items||[]).reduce(function(s,i){return s+i.aantal*(i.inkoop||0);},0);
@@ -1942,7 +2155,9 @@ function renderOverzicht(){
 // PRODUCTEN
 // ════════════════════════════════════════════════════
 function renderProducten(){
-  document.getElementById('product-list').innerHTML=S.producten.map(function(p){
+  var q=((document.getElementById('prod-search')||{}).value||'').toLowerCase().trim();
+  var lijst=q?S.producten.filter(function(p){return (p.naam||'').toLowerCase().includes(q)||(p.type||'').toLowerCase().includes(q);}):S.producten;
+  document.getElementById('product-list').innerHTML=lijst.map(function(p){
     var varDots=(p.varianten||[]).map(function(v){return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+(v.kleur||'#555')+';margin-right:3px;vertical-align:middle"></span>'+v.naam;}).join(' · ');
     return '<div class="product-card"><div class="product-icon">'+(p.icon||'📦')+'</div>'
       +'<div class="product-info"><div class="product-name">'+p.naam+'</div>'
@@ -2072,6 +2287,10 @@ function saveVerkoop(){
   var naam=document.getElementById('vk-naam').value.trim();
   var levering=_sel['vk-levering'];var betaling=_sel['vk-betaling'];
   var notitie=document.getElementById('vk-notitie').value.trim();
+  var adres=levering==='verzenden'?(document.getElementById('vk-adres').value.trim()||''):'';
+  var postcode=levering==='verzenden'?(document.getElementById('vk-postcode').value.trim()||''):'';
+  var stad=levering==='verzenden'?(document.getElementById('vk-stad').value.trim()||''):'';
+  if(levering==='verzenden'&&(!adres||!postcode||!stad)){showToast('VULL HET VERZENDADRES IN');return;}
   if(!naam){showToast('NAAM INVULLEN');return;}
   if(!levering){showToast('LEVERING KIEZEN');return;}
   if(!betaling){showToast('BETALING KIEZEN');return;}
@@ -2131,11 +2350,11 @@ function saveVerkoop(){
     if(bestaand&&bestaand.voorraadAfgeboekt)getOrderItems(bestaand).forEach(function(i){addStock(i.prodId,i.variantId||null,i.aantal||1);});
     S.verkoopOrders=S.verkoopOrders.filter(function(x){return x.id!==_editVkId;});
     // [NIEUW] heeftOnderprijsItem opgeslagen op order object
-    S.verkoopOrders.splice(Math.max(0,ei),0,{id:_editVkId,naam:naam,items:items,prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,levering:levering,betaling:betaling,status:status,datum:bestaand?bestaand.datum:today(),notitie:notitie,gesloten:false,voorraadAfgeboekt:directAfboeken,onderprijs:heeftOnderprijsItem});
+    S.verkoopOrders.splice(Math.max(0,ei),0,{id:_editVkId,naam:naam,items:items,prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,levering:levering,betaling:betaling,status:status,datum:bestaand?bestaand.datum:today(),notitie:notitie,adres:adres,postcode:postcode,stad:stad,gesloten:false,voorraadAfgeboekt:directAfboeken,onderprijs:heeftOnderprijsItem});
     _editVkId=null;
   } else {
     // [NIEUW] heeftOnderprijsItem opgeslagen op order object
-    S.verkoopOrders.push({id:uid(),naam:naam,items:items,prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,levering:levering,betaling:betaling,status:status,datum:today(),notitie:notitie,gesloten:false,voorraadAfgeboekt:directAfboeken,onderprijs:heeftOnderprijsItem});
+    S.verkoopOrders.push({id:uid(),naam:naam,items:items,prodId:items[0].prodId,variantId:items[0].variantId,aantal:items[0].aantal,prijs:items[0].prijs,levering:levering,betaling:betaling,status:status,datum:today(),notitie:notitie,adres:adres,postcode:postcode,stad:stad,gesloten:false,voorraadAfgeboekt:directAfboeken,onderprijs:heeftOnderprijsItem});
   }
   save();closeModal('modal-verkoop');renderVerkoop();renderVoorraad();renderDashboard();renderFinancieel();showToast('ORDER OPGESLAGEN');
 }
@@ -2148,6 +2367,10 @@ function editVkOrder(id){
   // Stap 3: vul naam en notitie in
   var nm=document.getElementById('vk-naam');if(nm)nm.value=o.naam||'';
   var nt=document.getElementById('vk-notitie');if(nt)nt.value=o.notitie||'';
+  var ea=document.getElementById('vk-adres');if(ea)ea.value=o.adres||'';
+  var ep=document.getElementById('vk-postcode');if(ep)ep.value=o.postcode||'';
+  var es=document.getElementById('vk-stad');if(es)es.value=o.stad||'';
+  var aw=document.getElementById('vk-adres-wrap');if(aw)aw.style.display=(o.levering==='verzenden'?'block':'none');
   // Stap 4: herstel levering/betaling knoppen
   document.querySelectorAll('#modal-verkoop .sel-btn').forEach(function(b){
     var oc=b.getAttribute('onclick')||'';
