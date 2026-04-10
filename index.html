@@ -1632,11 +1632,11 @@ function renderDonut(omzet, kosten, winst){
   var leg=document.getElementById('dash-donut-legend');
   if(!svg||!leg)return;
 
-  var T=svgTheme();
+  var T=svgTheme();var FF='"Inter","Segoe UI",sans-serif';var FFD='"Bebas Neue","Impact",sans-serif';
   // Geen data: lege staat
   if(omzet<=0&&kosten<=0){
     svg.innerHTML='<circle cx="60" cy="60" r="46" fill="none" stroke="'+T.stroke+'" stroke-width="16"/>'
-      +'<text x="60" y="64" text-anchor="middle" font-size="9" fill="'+T.muted+'" font-family="Space Mono,monospace">GEEN DATA</text>';
+      +'<text x="60" y="64" text-anchor="middle" font-size="10" fill="'+T.muted+'" font-family='+FF+'>GEEN DATA</text>';
     leg.innerHTML='';
     return;
   }
@@ -1680,7 +1680,7 @@ function renderDonut(omzet, kosten, winst){
   var sommatie=segmenten.reduce(function(s,g){return s+g.val;},0);
   if(sommatie<=0){
     svg.innerHTML='<circle cx="60" cy="60" r="46" fill="none" stroke="'+T.stroke+'" stroke-width="16"/>'
-      +'<text x="60" y="64" text-anchor="middle" font-size="9" fill="'+T.muted+'" font-family="Space Mono,monospace">€0</text>';
+      +'<text x="60" y="64" text-anchor="middle" font-size="10" fill="'+T.muted+'" font-family='+FF+'>€0</text>';
     leg.innerHTML='';
     return;
   }
@@ -1696,8 +1696,8 @@ function renderDonut(omzet, kosten, winst){
   // Midden: winstpercentage of verlies
   var midLabel=omzet>0?Math.round((winst/omzet)*100)+'%':'—';
   var midKleur=winst>=0?'#4ade80':'#f87171';
-  paden+='<text x="60" y="57" text-anchor="middle" font-size="14" font-weight="bold" fill="'+midKleur+'" font-family="Bebas Neue,Impact,sans-serif">'+midLabel+'</text>';
-  paden+='<text x="60" y="68" text-anchor="middle" font-size="7" fill="'+T.muted+'" font-family="Space Mono,monospace">'+(winst>=0?'MARGE':'VERLIES')+'</text>';
+  paden+='<text x="60" y="55" text-anchor="middle" font-size="16" font-weight="bold" fill="'+midKleur+'" font-family='+FFD+'>'+midLabel+'</text>';
+  paden+='<text x="60" y="67" text-anchor="middle" font-size="9" fill="'+T.muted+'" font-family='+FF+'>'+(winst>=0?'MARGE':'VERLIES')+'</text>';
 
   svg.innerHTML=paden;
 
@@ -1739,51 +1739,50 @@ function renderMerchBar(){
   });
 
   var T=svgTheme();
+  var FF='"Inter","Segoe UI",sans-serif';var FFD='"Bebas Neue","Impact",sans-serif';
   if(!producten.length){
     svg.setAttribute('height','48');
-    svg.innerHTML='<text x="50%" y="30" text-anchor="middle" font-size="9" fill="'+T.muted+'" font-family="Space Mono,monospace">Nog geen verkopen</text>';
+    svg.innerHTML='<text x="50%" y="30" text-anchor="middle" font-size="11" fill="'+T.muted+'" font-family='+FF+'>Nog geen verkopen</text>';
     return;
   }
 
-  // Sorteer op winst aflopend, max 6
-  producten.sort(function(a,b){return b.winst-a.winst;});
+  // Sorteer op verkocht aflopend, max 6
+  producten.sort(function(a,b){return b.verkocht-a.verkocht;});
   var top=producten.slice(0,6);
 
-  var BAR_H=18; var BAR_GAP=6; var LABEL_W=72; var WAARDE_W=48; var PAD=4;
-  var maxWinst=Math.max.apply(null, top.map(function(p){return Math.abs(p.winst);}));
+  var BAR_H=22; var BAR_GAP=8; var LABEL_W=84; var WAARDE_W=56; var PAD=6;
+  var maxVal=Math.max.apply(null, top.map(function(p){return Math.abs(p.winst)||1;}));
+  var VW=280;
   var svgH=(BAR_H+BAR_GAP)*top.length+PAD;
   svg.setAttribute('height', svgH);
-
-  // Bereken beschikbare breedte via viewBox
-  var VW=260; // logische breedte
   svg.setAttribute('viewBox','0 0 '+VW+' '+svgH);
   svg.setAttribute('preserveAspectRatio','xMidYMid meet');
 
-  var BAR_MAX=VW-LABEL_W-WAARDE_W-8;
-
+  var BAR_MAX=VW-LABEL_W-WAARDE_W-12;
   var html='';
   top.forEach(function(p, i){
     var y=i*(BAR_H+BAR_GAP)+PAD;
-    var barW=maxWinst>0?Math.max(2,Math.abs(p.winst)/maxWinst*BAR_MAX):2;
+    var barW=maxVal>0?Math.max(3,Math.abs(p.winst)/maxVal*BAR_MAX):3;
     var kleur=p.winst>=0?'#4ade80':'#f87171';
-    var naam=p.naam.length>9?p.naam.slice(0,8)+'…':p.naam;
+    var naam=p.naam.length>11?p.naam.slice(0,10)+'…':p.naam;
+    var mid=y+BAR_H*0.68;
 
-    // Label links
-    html+='<text x="'+(LABEL_W-4)+'" y="'+(y+BAR_H*0.72)+'" text-anchor="end"'
-      +' font-size="9" fill="'+T.normal+'" font-family="Space Mono,monospace">'+escHtml(naam)+'</text>';
+    // Label links — groter en leesbaar
+    html+='<text x="'+(LABEL_W-6)+'" y="'+mid+'" text-anchor="end"'
+      +' font-size="11" fill="'+T.normal+'" font-family='+FF+'>'+escHtml(naam)+'</text>';
 
     // Balk
-    html+='<rect x="'+LABEL_W+'" y="'+(y+2)+'" width="'+barW+'" height="'+(BAR_H-4)+'"'
-      +' fill="'+kleur+'" opacity="0.85" rx="2"/>';
+    html+='<rect x="'+LABEL_W+'" y="'+(y+3)+'" width="'+barW+'" height="'+(BAR_H-6)+'"'
+      +' fill="'+kleur+'" opacity="0.85" rx="3"/>';
 
-    // Waarde rechts van balk
+    // Winst waarde rechts
     var winstStr=(p.winst>=0?'+':'')+fmt(p.winst);
-    html+='<text x="'+(LABEL_W+barW+4)+'" y="'+(y+BAR_H*0.72)+'"'
-      +' font-size="11" fill="'+kleur+'" font-family="\'Bebas Neue\',Impact,sans-serif">'+winstStr+'</text>';
+    html+='<text x="'+(LABEL_W+barW+5)+'" y="'+(y+BAR_H*0.58)+'"'
+      +' font-size="12" fill="'+kleur+'" font-family='+FFD+'>'+winstStr+'</text>';
 
     // Verkocht sub-label
-    html+='<text x="'+(LABEL_W+barW+4)+'" y="'+(y+BAR_H-1)+'"'
-      +' font-size="7" fill="'+T.sub+'" font-family="Space Mono,monospace">'+p.verkocht+' verk.</text>';
+    html+='<text x="'+(LABEL_W+barW+5)+'" y="'+(y+BAR_H*0.95)+'"'
+      +' font-size="9" fill="'+T.sub+'" font-family='+FF+'>'+p.verkocht+' verk.</text>';
   });
 
   svg.innerHTML=html;
@@ -2323,101 +2322,209 @@ function saveSettings(){
 // ════════════════════════════════════════════════════
 // OVERZICHT
 // ════════════════════════════════════════════════════
+function ovzToggle(pid){
+  var el=document.getElementById('ovz-orders-'+pid);
+  var ico=document.getElementById('ovz-ico-'+pid);
+  if(!el)return;
+  var open=el.style.display==='none';
+  el.style.display=open?'block':'none';
+  if(ico)ico.textContent=open?'▲ Verberg orders':'▼ Bekijk orders';
+}
+
 function renderOverzicht(){
   var el=document.getElementById('overzicht-content');if(!el)return;
   var q=((document.getElementById('ovz-search')||{}).value||'').toLowerCase().trim();
-  var html='';
 
-  // Per product: verkoop per variant met orderlijst
+  // ── Verzamel data per product ────────────────────────
+  var prodData=[];
   S.producten.filter(function(p){return getProdType(p)!=='service';}).forEach(function(prod){
-    if(q&&!(prod.naam||'').toLowerCase().includes(q)){
-      // Controleer ook of naam in een order zit — skip product als niet gevonden
-      var orderMatch=S.verkoopOrders.some(function(o){
-        return (o.naam||'').toLowerCase().includes(q)&&getOrderItems(o).some(function(i){return i.prodId===prod.id;});
-      });
-      if(!orderMatch)return;
-    }
     var tp=getProdType(prod);
-    var hasVars=prod.varianten&&prod.varianten.length>0;
-    var vList=hasVars?prod.varianten:[{id:null,naam:null,kleur:'#888'}];
-    var totStock=0;vList.forEach(function(v){totStock+=getStock(prod.id,v.id);});
-
-    html+='<div class="card">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
-    html+='<div class="card-title" style="margin-bottom:0">'+(prod.icon||'📦')+' '+escHtml(prod.naam)+'</div>';
-    html+='<span class="tag '+(tp==='consumable'?'tag-orange':'tag-accent')+'">'+(tp==='consumable'?'🍺 CONSUMABLE':'🧢 MERCH')+'</span>';
-    html+='</div>';
-
-    vList.forEach(function(v){
-      var st=getStock(prod.id,v.id);
-      // Alle orders die dit product+variant bevatten
-      var bestellingen=[];
+    var vList=prod.varianten&&prod.varianten.length?prod.varianten:[{id:null,naam:null,kleur:'#888'}];
+    var totStock=0;
+    var varData=vList.map(function(v){
+      var st=getStock(prod.id,v.id);totStock+=st;
+      var orders=[];
       S.verkoopOrders.forEach(function(o){
-        if(q&&!(prod.naam||'').toLowerCase().includes(q)&&!(o.naam||'').toLowerCase().includes(q))return;
         getOrderItems(o).forEach(function(i){
-          if(i.prodId===prod.id&&(i.variantId||null)===(v.id||null)){
-            bestellingen.push({o:o,i:i});
-          }
+          if(i.prodId===prod.id&&(i.variantId||null)===(v.id||null))
+            orders.push({o:o,i:i});
         });
       });
-      var totBesteld=bestellingen.reduce(function(s,b){return s+(b.i.aantal||1);},0);
-      var totBetaald=bestellingen.filter(function(b){return b.o.betaling==='betaald';}).reduce(function(s,b){return s+(b.i.aantal||1);},0);
-
-      if(v.naam){
-        html+='<div style="display:flex;align-items:center;gap:6px;margin:10px 0 4px;font-family:var(--fd);font-size:12px;letter-spacing:1px;color:var(--muted)">';
-        html+='<span style="width:8px;height:8px;border-radius:50%;background:'+(v.kleur||'#888')+';flex-shrink:0;display:inline-block"></span>';
-        html+=escHtml(v.naam)+'</div>';
-      }
-      html+='<div style="display:flex;gap:12px;margin-bottom:6px;flex-wrap:wrap">';
-      html+='<span style="font-size:11px;color:var(--muted)">📦 In stock: <strong style="color:var(--white)">'+st+'</strong></span>';
-      html+='<span style="font-size:11px;color:var(--muted)">📋 Besteld: <strong style="color:var(--white)">'+totBesteld+'</strong></span>';
-      html+='<span style="font-size:11px;color:var(--muted)">✅ Betaald: <strong style="color:var(--green)">'+totBetaald+'</strong></span>';
-      html+='</div>';
-
-      if(bestellingen.length){
-        html+='<div style="border-top:1px solid var(--border);padding-top:6px">';
-        bestellingen.forEach(function(b){
-          var o=b.o;var i=b.i;
-          var betaaldOk=o.betaling==='betaald';
-          html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">';
-          html+='<div><div style="font-family:var(--fd);font-size:13px">'+escHtml(o.naam)+'</div>';
-          html+='<div style="font-size:10px;color:var(--muted)">'+displayDate(o.datum)+(o.gesloten?' · Afgerond':' · Open')+'</div></div>';
-          html+='<div style="display:flex;align-items:center;gap:8px">';
-          html+='<span style="font-family:var(--fd);font-size:14px">×'+(i.aantal||1)+'</span>';
-          html+='<span class="tag '+(betaaldOk?'tag-green':'tag-orange')+'">'+(betaaldOk?'BETAALD':'OPEN')+'</span>';
-          html+='</div></div>';
-        });
-        html+='</div>';
-      } else {
-        html+='<div style="font-size:10px;color:var(--muted);padding:4px 0">Nog niet besteld</div>';
-      }
+      var besteld=orders.reduce(function(s,b){return s+(b.i.aantal||1);},0);
+      var betaald=orders.filter(function(b){return b.o.betaling==='betaald';}).reduce(function(s,b){return s+(b.i.aantal||1);},0);
+      var open=besteld-betaald;
+      return {v:v,st:st,orders:orders,besteld:besteld,betaald:betaald,open:open};
     });
-    html+='</div>';
+    var totBesteld=varData.reduce(function(s,d){return s+d.besteld;},0);
+    var totBetaald=varData.reduce(function(s,d){return s+d.betaald;},0);
+
+    // Filter op zoekterm
+    if(q){
+      var naamMatch=(prod.naam||'').toLowerCase().includes(q);
+      var orderMatch=varData.some(function(vd){return vd.orders.some(function(b){return (b.o.naam||'').toLowerCase().includes(q);});});
+      if(!naamMatch&&!orderMatch)return;
+    }
+    prodData.push({prod:prod,tp:tp,totStock:totStock,totBesteld:totBesteld,totBetaald:totBetaald,varData:varData});
   });
 
-  // Tickets
+  // ── Tickets ──────────────────────────────────────────
+  var tickData=[];
   if(S.ticketVerkopen.length){
-    var tickQ=!q||'ticket'.includes(q)||S.ticketVerkopen.some(function(t){return (t.type||'').toLowerCase().includes(q);});
-    if(tickQ){
-      html+='<div class="card"><div class="card-title">🎟 TICKETVERKOOP</div>';
-      var typen={};
-      S.ticketVerkopen.forEach(function(t){
-        if(!typen[t.type])typen[t.type]={betaald:0,verwacht:0};
-        if(t.betaling==='betaald')typen[t.type].betaald+=t.aantal;
-        else typen[t.type].verwacht+=t.aantal;
+    var typen={};
+    S.ticketVerkopen.forEach(function(t){
+      if(q&&!('ticket'.includes(q)||(t.type||'').toLowerCase().includes(q)))return;
+      if(!typen[t.type])typen[t.type]={betaald:0,verwacht:0};
+      if(t.betaling==='betaald')typen[t.type].betaald+=t.aantal;
+      else typen[t.type].verwacht+=t.aantal;
+    });
+    for(var type in typen)tickData.push({type:type,d:typen[type]});
+  }
+
+  if(!prodData.length&&!tickData.length){
+    el.innerHTML='<div class="empty"><div style="font-size:32px;margin-bottom:8px">📋</div>Geen resultaten gevonden</div>';
+    return;
+  }
+
+  var html='';
+
+  // ── 1. RANKING SAMENVATTING ──────────────────────────
+  if(!q){
+    var ranked=prodData.slice().sort(function(a,b){return b.totBesteld-a.totBesteld;});
+    if(ranked.length){
+      var maxBest=ranked[0].totBesteld||1;
+      html+='<div class="card" style="margin-bottom:12px">';
+      html+='<div class="card-title">📊 BESTSELLERS</div>';
+      ranked.forEach(function(d){
+        var pct=Math.round((d.totBesteld/maxBest)*100);
+        var barKleur=d.tp==='consumable'?'var(--orange)':'var(--accent)';
+        html+='<div style="margin-bottom:10px">';
+        html+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px">';
+        html+='<span style="font-family:var(--fd);font-size:14px">'+(d.prod.icon||'📦')+' '+escHtml(d.prod.naam)+'</span>';
+        html+='<span style="font-size:11px;color:var(--muted)"><strong style="font-family:var(--fd);font-size:16px;color:var(--white)">'+d.totBetaald+'</strong> betaald';
+        if(d.totBesteld-d.totBetaald>0)html+=' &nbsp;·&nbsp; <span style="color:var(--orange)">'+(d.totBesteld-d.totBetaald)+' open</span>';
+        html+='</span></div>';
+        html+='<div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">';
+        html+='<div style="height:100%;width:'+pct+'%;background:'+barKleur+';border-radius:3px;transition:width .4s"></div>';
+        html+='</div></div>';
       });
-      for(var type in typen){
-        var d=typen[type];var totT=d.betaald+d.verwacht;
-        html+='<div class="stat-row"><span class="stat-label" style="display:flex;align-items:center;gap:6px"><span>🎟 '+escHtml(type)+'</span></span>';
-        html+='<span style="font-family:var(--fd);font-size:16px"><span class="green">'+d.betaald+'</span>';
-        if(d.verwacht)html+=' <span style="font-size:11px;color:var(--muted)">+ '+d.verwacht+' verwacht</span>';
-        html+=' <span style="font-size:11px;color:var(--muted)">/ '+totT+' totaal</span></span></div>';
+      if(tickData.length){
+        var totTickBet=tickData.reduce(function(s,t){return s+t.d.betaald;},0);
+        html+='<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px">';
+        html+='<div style="font-size:11px;color:var(--muted)">🎟 Tickets: <strong style="color:var(--white);font-family:var(--fd);font-size:16px">'+totTickBet+'</strong> betaald</div>';
+        html+='</div>';
       }
       html+='</div>';
     }
   }
 
-  el.innerHTML=html||'<div class="empty"><div style="font-size:32px;margin-bottom:8px">📋</div>Geen resultaten gevonden</div>';
+  // ── 2. PER PRODUCT KAARTEN ───────────────────────────
+  prodData.forEach(function(d){
+    var prod=d.prod;var tp=d.tp;
+    var pid=prod.id.replace(/[^a-z0-9]/gi,'');
+    var hasVars=prod.varianten&&prod.varianten.length>0;
+    var allOrders=[];d.varData.forEach(function(vd){vd.orders.forEach(function(o){allOrders.push(o);});});
+
+    html+='<div class="card">';
+
+    // Header
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+    html+='<div style="font-family:var(--fd);font-size:17px;letter-spacing:1px">'+(prod.icon||'📦')+' '+escHtml(prod.naam)+'</div>';
+    html+='<div style="text-align:right"><span style="font-family:var(--fd);font-size:22px;color:'+(d.totBetaald>0?'var(--green)':'var(--muted)')+'">'+d.totBetaald+'</span>';
+    html+='<div style="font-size:9px;letter-spacing:1px;color:var(--muted)">BETAALD</div></div>';
+    html+='</div>';
+
+    // Variant breakdown tabel
+    if(hasVars){
+      html+='<div style="border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:10px">';
+      // Header row
+      html+='<div style="display:grid;grid-template-columns:1fr 44px 44px 44px;gap:0;background:rgba(255,255,255,0.04);padding:5px 10px">';
+      html+='<span style="font-size:9px;letter-spacing:2px;color:var(--muted)">VARIANT</span>';
+      html+='<span style="font-size:9px;letter-spacing:1px;color:var(--muted);text-align:center">STOCK</span>';
+      html+='<span style="font-size:9px;letter-spacing:1px;color:var(--green);text-align:center">BET.</span>';
+      html+='<span style="font-size:9px;letter-spacing:1px;color:var(--orange);text-align:center">OPEN</span>';
+      html+='</div>';
+      d.varData.forEach(function(vd,idx){
+        var v=vd.v;
+        var rowBg=idx%2===1?'background:rgba(255,255,255,0.02);':'';
+        html+='<div style="display:grid;grid-template-columns:1fr 44px 44px 44px;gap:0;padding:7px 10px;border-top:1px solid var(--border);'+rowBg+'">';
+        html+='<span style="display:flex;align-items:center;gap:6px;font-size:12px">';
+        if(v.kleur)html+='<span style="width:8px;height:8px;border-radius:50%;background:'+v.kleur+';flex-shrink:0;display:inline-block"></span>';
+        html+=(v.naam?escHtml(v.naam):'Standaard')+'</span>';
+        var stKleur=vd.st===0?'var(--red)':vd.st<=(prod.minStock||2)?'var(--orange)':'var(--white)';
+        html+='<span style="font-family:var(--fd);font-size:16px;text-align:center;color:'+stKleur+'">'+vd.st+'</span>';
+        html+='<span style="font-family:var(--fd);font-size:16px;text-align:center;color:'+(vd.betaald>0?'var(--green)':'var(--muted)')+'">'+vd.betaald+'</span>';
+        html+='<span style="font-family:var(--fd);font-size:16px;text-align:center;color:'+(vd.open>0?'var(--orange)':'var(--muted)')+'">'+vd.open+'</span>';
+        html+='</div>';
+      });
+      html+='</div>';
+    } else {
+      // Geen varianten — compacte stats
+      var vd=d.varData[0]||{};
+      html+='<div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">';
+      var stKleur=vd.st===0?'var(--red)':vd.st<=(prod.minStock||2)?'var(--orange)':'var(--white)';
+      html+='<div style="text-align:center"><div style="font-family:var(--fd);font-size:22px;color:'+stKleur+'">'+(vd.st||0)+'</div><div style="font-size:9px;color:var(--muted);letter-spacing:1px">IN STOCK</div></div>';
+      html+='<div style="text-align:center"><div style="font-family:var(--fd);font-size:22px">'+(vd.besteld||0)+'</div><div style="font-size:9px;color:var(--muted);letter-spacing:1px">BESTELD</div></div>';
+      if(vd.open>0)html+='<div style="text-align:center"><div style="font-family:var(--fd);font-size:22px;color:var(--orange)">'+(vd.open||0)+'</div><div style="font-size:9px;color:var(--muted);letter-spacing:1px">NOG OPEN</div></div>';
+      html+='</div>';
+    }
+
+    // Orders knop + lijst (altijd op productniveau samen)
+    if(allOrders.length){
+      html+='<button id="ovz-ico-'+pid+'" onclick="ovzToggle(\''+pid+'\')" style="background:none;border:1px solid var(--border);border-radius:3px;color:var(--muted);font-family:var(--fd);font-size:11px;letter-spacing:1px;padding:5px 12px;cursor:pointer;width:100%">▼ Bekijk '+allOrders.length+' order'+(allOrders.length!==1?'s':'')+'</button>';
+      html+='<div id="ovz-orders-'+pid+'" style="display:none;margin-top:8px">';
+      // Groepeer per order (ipv per variant×order)
+      var orderMap={};
+      allOrders.forEach(function(b){
+        var oid=b.o.id;
+        if(!orderMap[oid]){orderMap[oid]={o:b.o,regels:[]};}
+        orderMap[oid].regels.push(b);
+      });
+      for(var oid in orderMap){
+        var entry=orderMap[oid];var o=entry.o;
+        var betaaldOk=o.betaling==='betaald';
+        html+='<div style="padding:8px 0;border-bottom:1px solid var(--border)">';
+        html+='<div style="display:flex;justify-content:space-between;align-items:flex-start">';
+        html+='<div><div style="font-family:var(--fd);font-size:14px">'+escHtml(o.naam)+'</div>';
+        html+='<div style="font-size:10px;color:var(--muted);margin-top:1px">'+displayDate(o.datum)+' · '+(STATUS_LBL[o.status]||o.status||'')+(o.gesloten?' · Afgerond':'')+'</div>';
+        // Regels van dit product in deze order
+        entry.regels.forEach(function(b){
+          var v=b.i.variantId?getVar(prod,b.i.variantId):null;
+          html+='<div style="font-size:11px;color:var(--muted);margin-top:2px">';
+          if(v)html+='<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+(v.kleur||'#888')+';margin-right:4px;vertical-align:middle"></span>'+escHtml(v.naam)+' ';
+          html+='× '+(b.i.aantal||1)+'</div>';
+        });
+        html+='</div>';
+        html+='<span class="tag '+(betaaldOk?'tag-green':'tag-orange')+'">'+(betaaldOk?'BETAALD':'OPEN')+'</span>';
+        html+='</div></div>';
+      }
+      html+='</div>';
+    } else {
+      html+='<div style="font-size:11px;color:var(--muted);text-align:center;padding:6px 0">Nog geen orders</div>';
+    }
+    html+='</div>';
+  });
+
+  // ── 3. TICKETS ───────────────────────────────────────
+  if(tickData.length){
+    html+='<div class="card"><div class="card-title">🎟 TICKETVERKOOP</div>';
+    html+='<div style="border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:0">';
+    html+='<div style="display:grid;grid-template-columns:1fr 60px 60px;background:rgba(255,255,255,0.04);padding:5px 10px">';
+    html+='<span style="font-size:9px;letter-spacing:2px;color:var(--muted)">TYPE</span>';
+    html+='<span style="font-size:9px;letter-spacing:1px;color:var(--green);text-align:center">BETAALD</span>';
+    html+='<span style="font-size:9px;letter-spacing:1px;color:var(--orange);text-align:center">VERWACHT</span>';
+    html+='</div>';
+    tickData.forEach(function(t,idx){
+      var bg=idx%2===1?'background:rgba(255,255,255,0.02);':'';
+      html+='<div style="display:grid;grid-template-columns:1fr 60px 60px;padding:8px 10px;border-top:1px solid var(--border);'+bg+'">';
+      html+='<span style="font-size:13px">'+escHtml(t.type)+'</span>';
+      html+='<span style="font-family:var(--fd);font-size:18px;text-align:center;color:'+(t.d.betaald>0?'var(--green)':'var(--muted)')+'">'+t.d.betaald+'</span>';
+      html+='<span style="font-family:var(--fd);font-size:18px;text-align:center;color:'+(t.d.verwacht>0?'var(--orange)':'var(--muted)')+'">'+t.d.verwacht+'</span>';
+      html+='</div>';
+    });
+    html+='</div></div>';
+  }
+
+  el.innerHTML=html;
 }
 
 // ════════════════════════════════════════════════════
