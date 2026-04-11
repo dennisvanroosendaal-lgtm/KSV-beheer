@@ -549,6 +549,19 @@
       <input class="form-input" type="number" step="0.01" id="set-vrzd" value="6.95" onchange="saveSettings()">
     </div>
     <div class="divider"></div>
+    <div class="card-title" style="font-size:13px;margin-bottom:10px">🎪 FESTIVAL &amp; ORGANISATIE</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="form-group"><label class="form-label">Naam organisatie *</label><input class="form-input" type="text" id="set-org-naam" placeholder="Bijv. Stichting KSV" onchange="saveSettings()"></div>
+      <div class="form-group"><label class="form-label">KvK-nummer *</label><input class="form-input" type="text" id="set-org-kvk" placeholder="12345678" onchange="saveSettings()"></div>
+      <div class="form-group"><label class="form-label">BTW-nummer organisatie</label><input class="form-input" type="text" id="set-org-btw" placeholder="NL123456789B01" onchange="saveSettings()"></div>
+      <div class="form-group"><label class="form-label">E-mail organisatie</label><input class="form-input" type="email" id="set-org-email" placeholder="info@ksv.nl" onchange="saveSettings()"></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Adres organisatie *</label><input class="form-input" type="text" id="set-org-adres" placeholder="Straat 1, 1234 AB Plaatsnaam" onchange="saveSettings()"></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">IBAN organisatie (voor betalingsinstructies)</label><input class="form-input" type="text" id="set-org-iban" placeholder="NL00 BANK 0000 0000 00" onchange="saveSettings()"></div>
+      <div class="form-group"><label class="form-label">Naam festival *</label><input class="form-input" type="text" id="set-fest-naam" placeholder="Kerkwerve Summervibe 2026" onchange="saveSettings()"></div>
+      <div class="form-group"><label class="form-label">Festivaldatum *</label><input class="form-input" type="date" id="set-fest-datum" onchange="saveSettings()"></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Festivallocatie (volledig adres) *</label><input class="form-input" type="text" id="set-fest-locatie" placeholder="Festivalterrein Kerkwerve, Zeeland" onchange="saveSettings()"></div>
+    </div>
+    <div class="divider"></div>
     <div class="form-group">
       <label class="form-label">Backup</label>
       <div style="display:flex;gap:8px;margin-bottom:8px">
@@ -823,6 +836,20 @@
         <div class="form-group"><label class="form-label">Hotel nodig</label><select class="form-select" id="lu-hotel"><option value="nee">Nee</option><option value="ja">Ja</option></select></div>
         <div class="form-group"><label class="form-label">Parkeerpassen (aantal)</label><input class="form-input" type="number" id="lu-parkeer" placeholder="0" min="0"></div>
         <div class="form-group" style="grid-column:1/-1"><label class="form-label">Groene kamer wensen</label><input class="form-input" type="text" id="lu-groene-kamer" placeholder="Bijv. riders, dranken..."></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);margin:10px 0;padding-top:10px">
+      <div class="card-title" style="font-size:13px;margin-bottom:8px">JURIDISCH &amp; FACTURATIE</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Juridische naam (persoon of bedrijf)</label><input class="form-input" type="text" id="lu-juridische-naam" placeholder="Bijv. DJ Rob B.V. of Robert Jansen"></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Factuuradres</label><input class="form-input" type="text" id="lu-adres" placeholder="Straat 1, 1234 AB Stad"></div>
+        <div class="form-group"><label class="form-label">KvK-nummer</label><input class="form-input" type="text" id="lu-kvk" placeholder="12345678"></div>
+        <div class="form-group"><label class="form-label">BTW-nummer artiest</label><input class="form-input" type="text" id="lu-btw-nummer" placeholder="NL123456789B01"></div>
+        <div class="form-group"><label class="form-label">IBAN artiest</label><input class="form-input" type="text" id="lu-iban" placeholder="NL00 BANK 0000 0000 00"></div>
+        <div class="form-group"><label class="form-label">BTW-plichtig</label><select class="form-select" id="lu-btw-plichtig"><option value="onbekend">Onbekend</option><option value="ja">Ja — excl. 21% BTW</option><option value="nee">Nee — vrijgesteld</option></select></div>
+        <div class="form-group"><label class="form-label">Aanbetaling (%)</label><input class="form-input" type="number" id="lu-aanbetaling" placeholder="25" min="0" max="100"></div>
+        <div class="form-group"><label class="form-label">Reiskosten vergoeding</label><input class="form-input" type="text" id="lu-reiskosten" placeholder="Bijv. €0,23/km of €150 forfait"></div>
+        <div class="form-group"><label class="form-label">Opname / publiciteit toestemming</label><select class="form-select" id="lu-opname"><option value="festival">Festivalpromotie (standaard)</option><option value="volledig">Volledig incl. commercieel</option><option value="geen">Geen opnames toegestaan</option></select></div>
       </div>
     </div>
     <div style="border-top:1px solid var(--border);margin:10px 0;padding-top:10px">
@@ -2342,9 +2369,20 @@ renderConsumablesOverzicht();
     }).join('');
   }
   var sv=document.getElementById('set-vrzd');if(sv)sv.value=S.settings.verzend||6.95;
+  var ss=S.settings;
+  var sf=function(id,v){var e=document.getElementById(id);if(e&&v)e.value=v;};
+  sf('set-org-naam',ss.orgNaam);sf('set-org-kvk',ss.orgKvk);sf('set-org-btw',ss.orgBtw);
+  sf('set-org-email',ss.orgEmail);sf('set-org-adres',ss.orgAdres);sf('set-org-iban',ss.orgIban);
+  sf('set-fest-naam',ss.festNaam);sf('set-fest-datum',ss.festDatum);sf('set-fest-locatie',ss.festLocatie);
 }
 function saveSettings(){
+  var gv=function(id){var e=document.getElementById(id);return e?e.value.trim():'';};
   S.settings.verzend=parseFloat(document.getElementById('set-vrzd').value)||6.95;
+  S.settings.orgNaam=gv('set-org-naam');S.settings.orgKvk=gv('set-org-kvk');
+  S.settings.orgBtw=gv('set-org-btw');S.settings.orgEmail=gv('set-org-email');
+  S.settings.orgAdres=gv('set-org-adres');S.settings.orgIban=gv('set-org-iban');
+  S.settings.festNaam=gv('set-fest-naam');S.settings.festDatum=gv('set-fest-datum');
+  S.settings.festLocatie=gv('set-fest-locatie');
   save();showToast('OPGESLAGEN');
 }
 
@@ -3152,6 +3190,260 @@ function saveLineup(LU){
   S.lineup=LU;
   save();
 }
+function genereerContractBtn(btn){genereerContract(btn.getAttribute('data-aid'));}
+
+function genereerContract(artiestId){
+  var LU=loadLineup();
+  var a=LU.artiesten.find(function(x){return x.id===artiestId;});
+  if(!a){showToast('ARTIEST NIET GEVONDEN');return;}
+  var org=S.settings||{};
+  var podium=LU.podia.find(function(p){return p.id===a.podiumId;})||{naam:'—'};
+
+  // Financiële berekeningen
+  var gage=parseFloat(a.gageOnderhandeld||a.gageGevraagd||0);
+  var btwPlichtig=a.btwPlichtig||'onbekend';
+  var btwBedrag=btwPlichtig==='ja'?Math.round(gage*0.21*100)/100:0;
+  var gageIncl=gage+btwBedrag;
+  var aanbPct=parseFloat(a.aanbetaling||25);
+  var aanbBedrag=Math.round((aanbPct/100)*gageIncl*100)/100;
+  var restBedrag=Math.round((gageIncl-aanbBedrag)*100)/100;
+
+  // Datum helpers
+  var festDatum=org.festDatum||org.festivalDatum||'';
+  var festDatumStr=festDatum
+    ?new Date(festDatum).toLocaleDateString('nl-NL',{weekday:'long',year:'numeric',month:'long',day:'numeric'})
+    :'29 augustus 2026';
+  var vandaag=new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
+  var contractNr='KSV-'+new Date().getFullYear()+'-'+a.id.substring(0,6).toUpperCase();
+
+  function cur(n){return '\u20ac\u00a0'+n.toFixed(2).replace('.',',');}
+  function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function sec(t){
+    return '<div style="font-size:10px;letter-spacing:3px;color:#888;text-transform:uppercase;'
+      +'margin:22px 0 8px;padding-bottom:5px;border-bottom:2px solid #e8e8e8">'+t+'</div>';
+  }
+  function trow(l,v){
+    return '<tr><td style="padding:6px 14px 6px 0;color:#666;font-size:12px;vertical-align:top;width:45%">'+l+'</td>'
+      +'<td style="padding:6px 0;font-size:12px;font-weight:600;color:#1a1a1a">'+v+'</td></tr>';
+  }
+  function clause(nr,txt){
+    return '<p style="margin-bottom:12px;font-size:12px;line-height:1.75;color:#333">'
+      +'<strong style="display:inline-block;background:#1a1a1a;color:#fff;font-size:9px;'
+      +'padding:2px 7px;border-radius:2px;margin-right:6px;letter-spacing:1px;vertical-align:middle">'+nr+'</strong>'
+      +txt+'</p>';
+  }
+
+  var festNaam=esc(org.festNaam||'Kerkwerve Summervibe 2026');
+  var orgNaam =esc(org.orgNaam||'Kerkwerve Summervibe');
+  var artNaam =esc(a.juridischeNaam||a.naam);
+  var artAlias=(a.juridischeNaam&&a.juridischeNaam!==a.naam)?' h.o.d.n. <em>'+esc(a.naam)+'</em>':'';
+
+  var btwRegel=btwPlichtig==='ja'
+    ? ' incl. 21% BTW'
+    : btwPlichtig==='nee' ? ' (BTW-vrijgesteld)' : ' (BTW-status onbekend — te bevestigen)';
+
+  // ── Bijlage A: Technische rider ──
+  var hasRider=a.techInputs||a.techWensen||a.techBackline==='ja'||a.techEigenTech==='ja'||a.techLicht==='ja';
+  var bijlageA='';
+  if(hasRider){
+    bijlageA+=sec('Bijlage A — Technische Rider');
+    bijlageA+='<table style="width:100%;border-collapse:collapse">';
+    if(a.techInputs)bijlageA+=trow('Aantal geluidsinputs',esc(a.techInputs));
+    if(a.techBackline)bijlageA+=trow('Backline nodig',esc(a.techBackline));
+    if(a.techEigenTech)bijlageA+=trow('Eigen geluidstechnicus',esc(a.techEigenTech));
+    if(a.techLicht)bijlageA+=trow('Lichtshow gewenst',esc(a.techLicht));
+    if(a.techWensen)bijlageA+=trow('Overige wensen',esc(a.techWensen));
+    bijlageA+='</table>';
+  }
+
+  // ── Bijlage B: Hospitality ──
+  var hasHosp=a.hospCatering||a.hospHotel==='ja'||a.hospPersonen||a.hospParkeer||a.hospGroeneKamer;
+  var bijlageB='';
+  if(hasHosp){
+    bijlageB+=sec('Bijlage B — Hospitality');
+    bijlageB+='<table style="width:100%;border-collapse:collapse">';
+    if(a.hospPersonen)bijlageB+=trow('Personen in gezelschap',esc(a.hospPersonen));
+    if(a.hospCatering)bijlageB+=trow('Catering wensen',esc(a.hospCatering));
+    if(a.hospHotel)bijlageB+=trow('Hotel nodig',esc(a.hospHotel));
+    if(a.hospParkeer)bijlageB+=trow('Parkeerpassen',esc(a.hospParkeer));
+    if(a.hospGroeneKamer)bijlageB+=trow('Groene kamer',esc(a.hospGroeneKamer));
+    bijlageB+='</table>';
+  }
+
+  // ── Opname clausule ──
+  var opnameTekst=a.opnameToestemming==='geen'
+    ?'Opdrachtgever is <strong>niet</strong> gerechtigd het optreden te filmen of fotograferen zonder voorafgaande schriftelijke toestemming van opdrachtnemer.'
+    :a.opnameToestemming==='volledig'
+      ?'Opdrachtnemer verleent opdrachtgever toestemming het optreden te filmen, fotograferen en te gebruiken voor alle doeleinden, inclusief commerciële exploitatie. Artiestennaam wordt altijd correct vermeld.'
+      :'Opdrachtgever heeft het recht het optreden te filmen en fotograferen voor <strong>promotionele doeleinden</strong> van het festival. Commerciële exploitatie vereist afzonderlijke schriftelijke toestemming. Artiestennaam wordt altijd vermeld.';
+
+  var html='<!DOCTYPE html><html lang="nl"><head><meta charset="UTF-8">'
+    +'<title>Contract — '+esc(a.naam)+' — '+festNaam+'</title>'
+    +'<style>'
+    +'*{margin:0;padding:0;box-sizing:border-box}'
+    +'body{font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1a1a1a;background:#fff}'
+    +'.page{max-width:800px;margin:0 auto;padding:40px 52px 60px}'
+    +'table{border-collapse:collapse}'
+    +'.fin td{padding:6px 14px 6px 0;font-size:12px;border-bottom:1px solid #f0f0f0}'
+    +'.fin .lbl{color:#666;width:45%}'
+    +'.fin .tot td{font-weight:700;background:#f8f8f4;padding:9px 14px 9px 0}'
+    +'.party{background:#f8f8f6;border:1px solid #e8e8e4;border-radius:4px;padding:16px;width:100%}'
+    +'@media print{'
+    +'body{print-color-adjust:exact;-webkit-print-color-adjust:exact}'
+    +'.no-print{display:none!important}'
+    +'}'
+    +'</style></head><body>'
+
+    // Print bar
+    +'<div class="no-print" style="position:sticky;top:0;background:#111;color:#fff;'
+    +'padding:10px 20px;display:flex;justify-content:space-between;align-items:center;z-index:99">'
+    +'<span style="font-size:11px;letter-spacing:2px;opacity:.8">OPTREEDOVEREENKOMST · '+esc(a.naam)+'</span>'
+    +'<button onclick="window.print()" style="background:#d4a800;color:#000;border:none;'
+    +'padding:8px 22px;font-weight:700;font-size:11px;letter-spacing:2px;cursor:pointer;border-radius:2px">'
+    +'🖨&nbsp; AFDRUKKEN / OPSLAAN ALS PDF</button></div>'
+
+    +'<div class="page">'
+
+    // Koptekst
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;'
+    +'padding-bottom:18px;margin-bottom:18px;border-bottom:3px solid #1a1a1a">'
+    +'<div>'
+    +'<div style="font-size:24px;font-weight:900;letter-spacing:2px;line-height:1.1">'
+    +'KERKWERVE <span style="color:#d4a800">SUMMERVIBE</span></div>'
+    +'<div style="font-size:10px;color:#888;margin-top:3px">'+esc(org.orgAdres||'')+'</div>'
+    +(org.orgKvk?'<div style="font-size:10px;color:#888">KvK '+esc(org.orgKvk)
+      +(org.orgBtw?' &nbsp;·&nbsp; BTW '+esc(org.orgBtw):'')+' &nbsp;·&nbsp; '+esc(org.orgEmail||'')+'</div>':'')
+    +'</div>'
+    +'<div style="text-align:right;font-size:11px;color:#666;line-height:1.9">'
+    +'<div style="font-size:14px;font-weight:700;color:#1a1a1a">OPTREEDOVEREENKOMST</div>'
+    +'<div>Nummer: <strong>'+contractNr+'</strong></div>'
+    +'<div>Opgemaakt: '+vandaag+'</div>'
+    +'</div></div>'
+
+    // Titel
+    +'<div style="font-size:26px;font-weight:900;letter-spacing:1px;margin-bottom:2px">OPTREEDOVEREENKOMST</div>'
+    +'<div style="font-size:11px;letter-spacing:4px;color:#888;text-transform:uppercase;margin-bottom:24px">'+festNaam+'</div>'
+
+    // Partijen
+    +sec('Artikel 1 — Partijen')
+    +'<table style="width:100%"><tr style="vertical-align:top"><td style="width:50%;padding-right:10px">'
+    +'<div class="party"><div style="font-size:9px;letter-spacing:3px;color:#aaa;margin-bottom:8px">OPDRACHTGEVER</div>'
+    +'<div style="font-size:14px;font-weight:700;margin-bottom:6px">'+orgNaam+'</div>'
+    +'<div style="font-size:11px;color:#555;line-height:1.8">'
+    +(org.orgAdres?esc(org.orgAdres)+'<br>':'')
+    +(org.orgKvk?'KvK: '+esc(org.orgKvk)+'<br>':'')
+    +(org.orgBtw?'BTW: '+esc(org.orgBtw)+'<br>':'')
+    +(org.orgEmail?esc(org.orgEmail)+'<br>':'')
+    +'</div></div>'
+    +'</td><td style="width:50%;padding-left:10px">'
+    +'<div class="party"><div style="font-size:9px;letter-spacing:3px;color:#aaa;margin-bottom:8px">OPDRACHTNEMER / ARTIEST</div>'
+    +'<div style="font-size:14px;font-weight:700;margin-bottom:6px">'+artNaam+artAlias+'</div>'
+    +'<div style="font-size:11px;color:#555;line-height:1.8">'
+    +(a.adres?esc(a.adres)+'<br>':'')
+    +(a.kvk?'KvK: '+esc(a.kvk)+'<br>':'')
+    +(a.btwNummer?'BTW: '+esc(a.btwNummer)+'<br>':'')
+    +(a.email?esc(a.email)+'<br>':'')
+    +(a.telefoon?esc(a.telefoon)+'<br>':'')
+    +(a.contact&&a.contact!==a.naam?'Contact: '+esc(a.contact)+'<br>':'')
+    +'</div></div>'
+    +'</td></tr></table>'
+
+    // Opdracht
+    +sec('Artikel 2 — Opdrachtomschrijving')
+    +'<div style="background:#fffcee;border-left:4px solid #d4a800;padding:14px 18px;'
+    +'border-radius:2px;margin-bottom:10px;font-size:12px;line-height:1.8">'
+    +'Opdrachtnemer verzorgt een '+(a.genre?esc(a.genre)+'-optreden':'muzikale performance')+' op '
+    +'<strong>'+esc(podium.naam)+'</strong> tijdens <strong>'+festNaam+'</strong> op <strong>'
+    +festDatumStr+'</strong>.<br>'
+    +'<strong>Tijdslot:</strong> '+esc(a.start)+' – '+esc(a.einde)+' uur'
+    +(a.soundcheck?' &nbsp;·&nbsp; <strong>Soundcheck:</strong> '+esc(a.soundcheck)+' uur':'')
+    +'<br><strong>Locatie:</strong> '+esc(org.festLocatie||'Kerkwerve, Zeeland')
+    +'</div>'
+    +'<p style="font-size:12px;line-height:1.75;color:#444;margin-bottom:8px">De technische '
+    +'specificaties zoals opgenomen in Bijlage A vormen een onlosmakelijk onderdeel van deze '
+    +'overeenkomst. Opdrachtnemer is verplicht tijdig aanwezig te zijn conform de afgesproken soundcheck-tijd.</p>'
+
+    // Financieel
+    +sec('Artikel 3 — Financiële afspraken')
+    +'<table class="fin" style="width:100%;margin-bottom:10px">'
+    +trow('Overeengekomen gage',cur(gage)+' excl. BTW')
+    +(btwPlichtig==='ja'?trow('BTW 21%',cur(btwBedrag)):'')
+    +'<tr class="tot"><td class="lbl tot" style="font-weight:700">Totaal'+btwRegel+'</td>'
+    +'<td style="font-weight:700;font-size:13px">'+cur(gageIncl)+'</td></tr>'
+    +(aanbBedrag>0?trow('Aanbetaling ('+aanbPct+'%) bij ondertekening',cur(aanbBedrag)):'')
+    +(aanbBedrag>0?trow('Restbetaling uiterlijk 7 dagen voor festival',cur(restBedrag)):'')
+    +(a.reiskosten?trow('Reiskosten vergoeding',esc(a.reiskosten)):'')
+    +(org.orgIban?trow('Betaling via IBAN',esc(org.orgIban)+' t.n.v. '+orgNaam):'')
+    +'</table>'
+    +'<p style="font-size:12px;line-height:1.75;color:#444;margin-bottom:8px">Betaling geschiedt '
+    +'binnen de overeengekomen termijn. Bij niet-tijdige betaling is opdrachtgever van rechtswege in verzuim '
+    +'en is wettelijke handelsrente verschuldigd (art. 6:119a BW). Bij uitblijven aanbetaling behoudt '
+    +'opdrachtnemer het recht de overeenkomst zonder schadevergoedingsplicht te ontbinden.</p>'
+
+    // Annulering
+    +sec('Artikel 4 — Annulering en overmacht')
+    +'<table class="fin" style="width:100%;margin-bottom:10px">'
+    +'<tr style="background:#f8f8f6"><td style="padding:7px 14px 7px 0;font-weight:700;font-size:11px;'
+    +'letter-spacing:1px;color:#555;width:55%">ANNULERING DOOR OPDRACHTGEVER</td>'
+    +'<td style="padding:7px 0;font-weight:700;font-size:11px;letter-spacing:1px;color:#555">VERGOEDING</td></tr>'
+    +trow('Meer dan 90 dagen voor het evenement','25% van de overeengekomen gage')
+    +trow('30 tot 90 dagen voor het evenement','50% van de overeengekomen gage')
+    +trow('Minder dan 30 dagen voor het evenement','100% van de overeengekomen gage')
+    +'</table>'
+    +clause('OVERMACHT','Overmacht omvat: natuurrampen, pandemie, overheidsverbod op evenementen, brand op de locatie of vergelijkbare omstandigheden buiten redelijke invloedssfeer van partijen. Bij overmacht zijn beide partijen bevrijd van verplichtingen zonder recht op schadevergoeding; reeds betaalde aanbetalingen worden gerestitueerd binnen 14 dagen.')
+    +clause('ARTIEST ANNULEERT','Indien opdrachtnemer het optreden annuleert binnen 30 dagen voor het evenement, is opdrachtnemer aansprakelijk voor de aantoonbare directe schade van opdrachtgever, waaronder kosten voor een vervangende act.')
+
+    // Auteursrecht
+    +sec('Artikel 5 — Opnames en publiciteit')
+    +'<p style="font-size:12px;line-height:1.75;color:#333;margin-bottom:10px">'+opnameTekst+'</p>'
+    +'<p style="font-size:12px;line-height:1.75;color:#333;margin-bottom:8px">De BUMA-licentie voor '
+    +'openbare uitvoering van muziekwerken valt onder de verantwoordelijkheid van opdrachtgever als organisator.</p>'
+
+    // Overig
+    +sec('Artikel 6 — Overige bepalingen')
+    +clause('HUISREGELS','Opdrachtnemer en diens crew zijn gebonden aan de huisregels en veiligheidsprotocollen van het festival zoals gecommuniceerd door opdrachtgever voor aanvang van het evenement.')
+    +clause('TOEPASSELIJK RECHT','Op deze overeenkomst is uitsluitend Nederlands recht van toepassing. Geschillen worden in eerste instantie beslecht door minnelijk overleg. Bij gebreke hiervan is de bevoegde rechter in het arrondissement Zeeland-West-Brabant exclusief bevoegd.')
+    +clause('VOLLEDIGHEID','Deze overeenkomst en eventuele bijlagen vormen de volledige overeenkomst tussen partijen en vervangen alle eerdere mondelinge of schriftelijke afspraken.')
+
+    // Bijlagen
+    +bijlageA+bijlageB
+
+    // Handtekeningen
+    +sec('Ondertekening')
+    +'<p style="font-size:12px;line-height:1.75;color:#444;margin-bottom:18px">Beide partijen verklaren '
+    +'kennis te hebben genomen van de inhoud van deze overeenkomst en gaan hiermee akkoord. '
+    +'Door ondertekening treedt deze overeenkomst in werking.</p>'
+    +'<table style="width:100%"><tr style="vertical-align:top">'
+    +'<td style="width:48%;padding-right:16px">'
+    +'<div style="font-size:9px;letter-spacing:3px;color:#aaa;margin-bottom:6px">OPDRACHTGEVER</div>'
+    +'<div style="font-size:12px;font-weight:600;margin-bottom:40px">'+orgNaam+'</div>'
+    +'<div style="border-top:1px solid #ccc;padding-top:6px;font-size:10px;color:#999">Handtekening</div>'
+    +'<div style="margin-top:12px;font-size:11px;color:#666">Naam: _________________________</div>'
+    +'<div style="margin-top:6px;font-size:11px;color:#666">Datum: ________________________</div>'
+    +'</td>'
+    +'<td style="width:4%"></td>'
+    +'<td style="width:48%;padding-left:16px;border-left:1px solid #eee">'
+    +'<div style="font-size:9px;letter-spacing:3px;color:#aaa;margin-bottom:6px">OPDRACHTNEMER / ARTIEST</div>'
+    +'<div style="font-size:12px;font-weight:600;margin-bottom:40px">'+artNaam+'</div>'
+    +'<div style="border-top:1px solid #ccc;padding-top:6px;font-size:10px;color:#999">Handtekening</div>'
+    +'<div style="margin-top:12px;font-size:11px;color:#666">Naam: _________________________</div>'
+    +'<div style="margin-top:6px;font-size:11px;color:#666">Datum: ________________________</div>'
+    +'</td></tr></table>'
+
+    +'<div style="margin-top:36px;padding-top:14px;border-top:1px solid #eee;'
+    +'font-size:10px;color:#bbb;text-align:center">'
+    +festNaam+' &nbsp;·&nbsp; Contractnummer: '+contractNr+' &nbsp;·&nbsp; Opgemaakt op '+vandaag
+    +'</div>'
+    +'</div>'
+    +'<script>setTimeout(function(){window.print();},500);<\/script>'
+    +'</body></html>';
+
+  var win=window.open('','_blank','width=920,height=750,scrollbars=yes');
+  if(!win){showToast('POPUP GEBLOKKEERD — sta popups toe voor deze pagina');return;}
+  win.document.write(html);
+  win.document.close();
+}
+
 function resetLineup(){
   if(!confirm('Alle artiesten en podia verwijderen? Dit kan niet ongedaan worden gemaakt.'))return;
   S.lineup={artiesten:[],podia:[]};
@@ -3198,6 +3490,15 @@ function prepArtiestModal(LU,a){
   set('lu-catering',isEdit?a.hospCatering:'');set('lu-personen',isEdit?a.hospPersonen:'');
   set('lu-hotel',isEdit?a.hospHotel:'nee');set('lu-parkeer',isEdit?a.hospParkeer:'');
   set('lu-groene-kamer',isEdit?a.hospGroeneKamer:'');
+  set('lu-juridische-naam',isEdit?a.juridischeNaam:'');
+  set('lu-adres',isEdit?a.adres:'');
+  set('lu-kvk',isEdit?a.kvk:'');
+  set('lu-btw-nummer',isEdit?a.btwNummer:'');
+  set('lu-iban',isEdit?a.iban:'');
+  set('lu-btw-plichtig',isEdit?(a.btwPlichtig||'onbekend'):'onbekend');
+  set('lu-aanbetaling',isEdit?a.aanbetaling:'25');
+  set('lu-reiskosten',isEdit?a.reiskosten:'');
+  set('lu-opname',isEdit?(a.opnameToestemming||'festival'):'festival');
   set('lu-contract-status',isEdit?a.contractStatus:'niet');
   set('lu-contract-verstuurd',isEdit?a.contractVerstuurd:'');
   set('lu-contract-ontvangen',isEdit?a.contractOntvangen:'');
@@ -3229,6 +3530,10 @@ function saveArtiest(){
     techLicht:get('lu-licht'),techWensen:get('lu-tech-wensen'),
     hospCatering:get('lu-catering'),hospPersonen:get('lu-personen'),hospHotel:get('lu-hotel'),
     hospParkeer:get('lu-parkeer'),hospGroeneKamer:get('lu-groene-kamer'),
+    juridischeNaam:get('lu-juridische-naam'),adres:get('lu-adres'),kvk:get('lu-kvk'),
+    btwNummer:get('lu-btw-nummer'),iban:get('lu-iban'),btwPlichtig:get('lu-btw-plichtig'),
+    aanbetaling:get('lu-aanbetaling'),reiskosten:get('lu-reiskosten'),
+    opnameToestemming:get('lu-opname'),
     contractStatus:get('lu-contract-status'),contractVerstuurd:get('lu-contract-verstuurd'),
     contractOntvangen:get('lu-contract-ontvangen'),contractNotitie:get('lu-contract-notitie'),
     notitie:get('lu-notitie')
@@ -3359,9 +3664,11 @@ function renderLineup(){
     html+='<td style="padding:10px 6px;font-size:10px">'+(BLBL[a.betaalStatus]||'—')+'</td>';
     html+='<td style="padding:10px 6px;font-size:10px">'+(CLBL[a.contractStatus]||'—')+'</td>';
     html+='<td style="padding:10px 6px;text-align:right;white-space:nowrap">';
-    // Snelknop status bevestigen (alleen bij interesse)
     if(a.status==='interesse'){
       html+='<button class="btn-sec btn-green" style="font-size:10px;padding:4px 8px;margin-right:4px" data-aid="'+a.id+'" onclick="bevestigArtiestBtn(this)">✓ BEVESTIG</button>';
+    }
+    if(a.status==='bevestigd'||a.status==='contract'){
+      html+='<button class="btn-sec" style="font-size:10px;padding:4px 8px;margin-right:4px;color:var(--blue);border-color:var(--blue)" data-aid="'+a.id+'" onclick="genereerContractBtn(this)">📄 CONTRACT</button>';
     }
     html+='<button class="btn-sec" style="font-size:10px;padding:4px 8px;margin-right:4px" data-aid="'+a.id+'" onclick="editArtiestBtn(this)">EDIT</button>';
     html+='<button class="btn-danger" style="font-size:10px;padding:4px 8px" data-aid="'+a.id+'" onclick="delArtiestBtn(this)">X</button>';
