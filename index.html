@@ -426,6 +426,7 @@
     </div>
   </div>
   <!-- ── EINDE GRAFIEKEN ── -->
+  <div class="card"><div class="card-title">MERCHANDISE VOORRAAD</div><div id="dash-voorraad-rows"></div></div>
   <div class="card">
     <div class="card-title">OMZET BREAKDOWN</div>
     <div class="stat-row"><span class="stat-label">🧢 Merchandise</span><span class="stat-value" id="dash-omzet-merch">€0</span></div>
@@ -446,7 +447,6 @@
     <div class="stat-row"><span class="stat-label">Verwacht (onbetaald)</span><span class="stat-value orange" id="dash-ticket-open">0</span></div>
   </div>
   <div class="card"><div class="card-title">CONSUMABLES VOORRAAD</div><div id="dash-consumables"></div></div>
-  <div class="card"><div class="card-title">MERCHANDISE VOORRAAD</div><div id="dash-voorraad-rows"></div></div>
 </div>
 
 <!-- VOORRAAD -->
@@ -620,6 +620,7 @@
     <div style="flex:1"></div>
     <button class="btn-sec" onclick="openLuModal('modal-podium')" style="color:var(--blue);border-color:var(--blue);font-size:11px">+ PODIUM</button>
     <button class="btn-sec" onclick="openLuModal('modal-artiest')" style="color:var(--accent);border-color:var(--accent)">+ ARTIEST</button>
+    <button class="btn-sec" onclick="resetLineup()" style="color:var(--red);border-color:var(--red);font-size:11px">🗑 OPSCHONEN</button>
   </div>
   <div class="card" style="margin-bottom:12px">
     <div class="card-title">DAGSCHEMA</div>
@@ -1268,7 +1269,8 @@ function calcKPIs(){
   var totaalOmzet=omzetMerch+omzetTicket;
   var totaalKosten=inkoopMerch+inkoopCons+inkoopServ+inkoopArtiesten-retourCredit;
   var winst=totaalOmzet-totaalKosten;
-  var openOrders=S.verkoopOrders.filter(function(o){return !o.gesloten;}).length;
+  var openOrders=S.verkoopOrders.filter(function(o){return !o.gesloten;}).length
+    +(S.inkoopOrders||[]).filter(function(o){return !o.ontvangen;}).length;
 
   // [GEWIJZIGD] intern uitgesloten van verwachte omzet
   S.verkoopOrders.filter(function(o){return !o.gesloten&&o.betaling!=='betaald'&&o.levering!=='intern';}).forEach(function(o){
@@ -1640,7 +1642,7 @@ function renderDonut(omzet, kosten, winst){
   // Geen data: lege staat
   if(omzet<=0&&kosten<=0){
     svg.innerHTML='<circle cx="60" cy="60" r="46" fill="none" stroke="'+T.stroke+'" stroke-width="16"/>'
-      +'<text x="60" y="64" text-anchor="middle" font-size="10" fill="'+T.muted+'" font-family='+FF+'>GEEN DATA</text>';
+      +'<text x="60" y="64" text-anchor="middle" font-size="12" fill="'+T.muted+'" font-family='+FF+'>GEEN DATA</text>';
     leg.innerHTML='';
     return;
   }
@@ -1701,7 +1703,7 @@ function renderDonut(omzet, kosten, winst){
   var midLabel=omzet>0?Math.round((winst/omzet)*100)+'%':'—';
   var midKleur=winst>=0?'#4ade80':'#f87171';
   paden+='<text x="60" y="55" text-anchor="middle" font-size="16" font-weight="bold" fill="'+midKleur+'" font-family='+FFD+'>'+midLabel+'</text>';
-  paden+='<text x="60" y="67" text-anchor="middle" font-size="9" fill="'+T.muted+'" font-family='+FF+'>'+(winst>=0?'MARGE':'VERLIES')+'</text>';
+  paden+='<text x="60" y="68" text-anchor="middle" font-size="11" fill="'+T.normal+'" font-family='+FF+'>'+(winst>=0?'MARGE':'VERLIES')+'</text>';
 
   svg.innerHTML=paden;
 
@@ -1771,9 +1773,9 @@ function renderMerchBar(){
     var naam=p.naam.length>11?p.naam.slice(0,10)+'…':p.naam;
     var mid=y+BAR_H*0.68;
 
-    // Label links — groter en leesbaar
+    // Label links
     html+='<text x="'+(LABEL_W-6)+'" y="'+mid+'" text-anchor="end"'
-      +' font-size="11" fill="'+T.normal+'" font-family='+FF+'>'+escHtml(naam)+'</text>';
+      +' font-size="13" fill="'+T.legVal+'" font-family='+FF+'>'+escHtml(naam)+'</text>';
 
     // Balk
     html+='<rect x="'+LABEL_W+'" y="'+(y+3)+'" width="'+barW+'" height="'+(BAR_H-6)+'"'
@@ -1781,12 +1783,12 @@ function renderMerchBar(){
 
     // Winst waarde rechts
     var winstStr=(p.winst>=0?'+':'')+fmt(p.winst);
-    html+='<text x="'+(LABEL_W+barW+5)+'" y="'+(y+BAR_H*0.58)+'"'
-      +' font-size="12" fill="'+kleur+'" font-family='+FFD+'>'+winstStr+'</text>';
+    html+='<text x="'+(LABEL_W+barW+5)+'" y="'+(y+BAR_H*0.62)+'"'
+      +' font-size="13" fill="'+kleur+'" font-weight="bold" font-family='+FF+'>'+winstStr+'</text>';
 
     // Verkocht sub-label
-    html+='<text x="'+(LABEL_W+barW+5)+'" y="'+(y+BAR_H*0.95)+'"'
-      +' font-size="9" fill="'+T.sub+'" font-family='+FF+'>'+p.verkocht+' verk.</text>';
+    html+='<text x="'+(LABEL_W+barW+5)+'" y="'+(y+BAR_H*0.97)+'"'
+      +' font-size="11" fill="'+T.normal+'" font-family='+FF+'>'+p.verkocht+' verk.</text>';
   });
 
   svg.innerHTML=html;
@@ -2394,20 +2396,7 @@ function renderOverzicht(){
     prodData.push({prod:prod,tp:tp,totStock:totStock,totBesteld:totBesteld,totBetaald:totBetaald,varData:varData});
   });
 
-  // ── Tickets ──────────────────────────────────────────
-  var tickData=[];
-  if(S.ticketVerkopen.length){
-    var typen={};
-    S.ticketVerkopen.forEach(function(t){
-      if(q&&!('ticket'.includes(q)||(t.type||'').toLowerCase().includes(q)))return;
-      if(!typen[t.type])typen[t.type]={betaald:0,verwacht:0};
-      if(t.betaling==='betaald')typen[t.type].betaald+=t.aantal;
-      else typen[t.type].verwacht+=t.aantal;
-    });
-    for(var type in typen)tickData.push({type:type,d:typen[type]});
-  }
-
-  if(!prodData.length&&!tickData.length){
+  if(!prodData.length){
     el.innerHTML='<div class="empty"><div style="font-size:32px;margin-bottom:8px">📋</div>Geen resultaten gevonden</div>';
     return;
   }
@@ -2434,12 +2423,6 @@ function renderOverzicht(){
         html+='<div style="height:100%;width:'+pct+'%;background:'+barKleur+';border-radius:3px;transition:width .4s"></div>';
         html+='</div></div>';
       });
-      if(tickData.length){
-        var totTickBet=tickData.reduce(function(s,t){return s+t.d.betaald;},0);
-        html+='<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px">';
-        html+='<div style="font-size:11px;color:var(--muted)">🎟 Tickets: <strong style="color:var(--white);font-family:var(--fd);font-size:16px">'+totTickBet+'</strong> betaald</div>';
-        html+='</div>';
-      }
       html+='</div>';
     }
   }
@@ -2530,26 +2513,6 @@ function renderOverzicht(){
     }
     html+='</div>';
   });
-
-  // ── 3. TICKETS ───────────────────────────────────────
-  if(tickData.length){
-    html+='<div class="card"><div class="card-title">🎟 TICKETVERKOOP</div>';
-    html+='<div style="border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:0">';
-    html+='<div style="display:grid;grid-template-columns:1fr 60px 60px;background:rgba(255,255,255,0.04);padding:5px 10px">';
-    html+='<span style="font-size:9px;letter-spacing:2px;color:var(--muted)">TYPE</span>';
-    html+='<span style="font-size:9px;letter-spacing:1px;color:var(--green);text-align:center">BETAALD</span>';
-    html+='<span style="font-size:9px;letter-spacing:1px;color:var(--orange);text-align:center">VERWACHT</span>';
-    html+='</div>';
-    tickData.forEach(function(t,idx){
-      var bg=idx%2===1?'background:rgba(255,255,255,0.02);':'';
-      html+='<div style="display:grid;grid-template-columns:1fr 60px 60px;padding:8px 10px;border-top:1px solid var(--border);'+bg+'">';
-      html+='<span style="font-size:13px">'+escHtml(t.type)+'</span>';
-      html+='<span style="font-family:var(--fd);font-size:18px;text-align:center;color:'+(t.d.betaald>0?'var(--green)':'var(--muted)')+'">'+t.d.betaald+'</span>';
-      html+='<span style="font-family:var(--fd);font-size:18px;text-align:center;color:'+(t.d.verwacht>0?'var(--orange)':'var(--muted)')+'">'+t.d.verwacht+'</span>';
-      html+='</div>';
-    });
-    html+='</div></div>';
-  }
 
   el.innerHTML=html;
 }
@@ -3188,6 +3151,13 @@ function loadLineup(){
 function saveLineup(LU){
   S.lineup=LU;
   save();
+}
+function resetLineup(){
+  if(!confirm('Alle artiesten en podia verwijderen? Dit kan niet ongedaan worden gemaakt.'))return;
+  S.lineup={artiesten:[],podia:[]};
+  save();
+  renderLineup();
+  showToast('LINEUP OPGESCHOOND');
 }
 function openLuModal(id){
   // Alleen bij nieuw formulier resetten — editArtiest vult zelf in via prepArtiestModal(LU, a)
