@@ -933,8 +933,7 @@ initTheme();
 // ════════════════════════════════════════════════════
 // WACHTWOORDBEVEILIGING
 // Verander KSV_PASSWORD naar jouw eigen wachtwoord.
-// ADVIES: gebruik ook een JSONBin Access Key i.p.v.
-// de Master Key — zie jsonbin.io → Settings → Access Keys.
+// De JSONBin API-sleutel staat veilig in Vercel Environment Variables (zie api/sync.js).
 // ════════════════════════════════════════════════════
 var KSV_PASSWORD = 'kerkwerve2026';
 
@@ -960,10 +959,8 @@ function checkAuth(){
 // bepaalt welk apparaat de meest recente data heeft.
 // Geen timestamp vergelijking meer — was de root cause.
 // ════════════════════════════════════════════════════
-var KSV_BIN_ID  = '69d2b27436566621a8805757';
-// VERVANG HIERONDER DE MASTER KEY DOOR EEN ACCESS KEY (jsonbin.io → Settings → Access Keys)
-var KSV_API_KEY = '$2a$10$DTMyywKe.kvN4KogAjdplOF.RUZozano.ux1fdpexn0pop5X5iJa6';
-var KSV_API_URL = 'https://api.jsonbin.io/v3/b/' + KSV_BIN_ID;
+// Cloud sync via Vercel proxy — API-sleutel staat in Vercel Environment Variables (JSONBIN_API_KEY)
+var KSV_API_URL = '/api/sync';
 
 var _syncSaving   = false;
 var _syncTimeout  = null;
@@ -1015,8 +1012,7 @@ function _applyCloudRecord(record){
 function syncPollVersie(){
   if(_syncSaving)return;
   fetch(KSV_API_URL,{
-    method:'GET',
-    headers:{'X-Master-Key':KSV_API_KEY}
+    method:'GET'
   })
   .then(function(res){
     if(!res.ok)throw new Error('HTTP '+res.status);
@@ -1056,8 +1052,7 @@ function syncOpslaan(){
     fetch(KSV_API_URL,{
       method:'PUT',
       headers:{
-        'Content-Type':'application/json',
-        'X-Master-Key':KSV_API_KEY
+        'Content-Type':'application/json'
       },
       body:JSON.stringify(S)
     })
