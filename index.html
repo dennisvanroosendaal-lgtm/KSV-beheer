@@ -400,6 +400,15 @@
     <button class="btn-primary" onclick="openModal('modal-afboek')" style="font-size:15px;letter-spacing:2px;padding:16px 8px;background:var(--orange);color:#000">🍺 AFREKENEN</button>
   </div>
 
+  <!-- ── MELDINGEN (inklapbaar) ── -->
+  <div class="card" id="dash-alerts-card" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="dashAlertsToggle()">
+      <div class="card-title" style="margin-bottom:0" id="dash-alerts-titel">⚠️ MELDINGEN</div>
+      <span id="dash-alerts-ico" style="font-size:12px;color:var(--muted)">▶</span>
+    </div>
+    <div id="dash-alerts" style="display:none;margin-top:10px"></div>
+  </div>
+
   <!-- ── GRAFIEKEN ── -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
     <!-- Donut: omzet / kosten / winst -->
@@ -438,13 +447,6 @@
   </div>
   <div class="card"><div class="card-title">CONSUMABLES VOORRAAD</div><div id="dash-consumables"></div></div>
   <div class="card"><div class="card-title">MERCHANDISE VOORRAAD</div><div id="dash-voorraad-rows"></div></div>
-  <div class="card" id="dash-alerts-card" style="display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="dashAlertsToggle()">
-      <div class="card-title" style="margin-bottom:0" id="dash-alerts-titel">⚠️ MELDINGEN</div>
-      <span id="dash-alerts-ico" style="font-size:12px;color:var(--muted)">▶</span>
-    </div>
-    <div id="dash-alerts" style="display:none;margin-top:10px"></div>
-  </div>
 </div>
 
 <!-- VOORRAAD -->
@@ -1083,6 +1085,8 @@ window.addEventListener('offline',function(){
 function renderAll(){
   try{renderDashboard();}catch(e){console.error('renderDashboard fout:',e);}
   try{updateLandingStats();}catch(e){console.error('updateLandingStats fout:',e);}
+  // Lineup altijd bijwerken na sync zodat wijzigingen op andere apparaten zichtbaar zijn
+  try{renderLineup();}catch(e){console.error('renderLineup fout:',e);}
   var active=document.querySelector('.content.active');
   if(!active)return;
   var id=active.id;
@@ -1095,7 +1099,7 @@ function renderAll(){
     'tab-tickets':renderTickets,'tab-lineup':renderLineup,
     'tab-afgerond':renderAfgerond,'tab-producten':renderProducten
   };
-  if(map[id]&&id!=='tab-dashboard')try{map[id]();}catch(e){console.error('render fout ('+id+'):',e);}
+  if(map[id]&&id!=='tab-dashboard'&&id!=='tab-lineup')try{map[id]();}catch(e){console.error('render fout ('+id+'):',e);}
 }
 
 // ════════════════════════════════════════════════════
@@ -1941,20 +1945,43 @@ function dashVrdToggle(pid){
 
 function renderDashOpenOrders(){
   var el=document.getElementById('dash-open-orders');if(!el)return;
-  var orders=S.verkoopOrders.filter(function(o){return !o.gesloten;}).slice().reverse();
-  if(!orders.length){el.innerHTML='<div class="empty" style="padding:12px">Geen open orders</div>';return;}
+  var verkoop=S.verkoopOrders.filter(function(o){return !o.gesloten;}).slice().reverse();
+  var inkoop=(S.inkoopOrders||[]).filter(function(o){return !o.ontvangen;}).slice().reverse();
+  if(!verkoop.length&&!inkoop.length){el.innerHTML='<div class="empty" style="padding:12px">Geen open orders</div>';return;}
   var html='';
-  orders.forEach(function(o){
-    var betalingOk=o.betaling==='betaald';
-    html+='<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.07)">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">';
-    html+='<div style="flex:1;min-width:0"><div style="font-family:var(--fd);font-size:16px">'+escHtml(o.naam)+'</div>';
-    html+='<div style="font-size:10px;color:var(--muted);margin-top:2px">'+displayDate(o.datum)+' &middot; '+(STATUS_LBL[o.status]||o.status)+'</div></div>';
-    html+='<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">';
-    html+='<button class="btn-sec '+(betalingOk?'btn-green':'btn-orange')+'" data-oid="'+o.id+'" onclick="dashToggleBetalingBtn(this)" style="font-size:10px;padding:5px 10px">'+(betalingOk?'BETAALD':'BETALEN')+'</button>';
-    html+='<button class="btn-sec btn-green" data-oid="'+o.id+'" onclick="sluitVanDashboardBtn(this)" style="font-size:10px;padding:5px 10px">✓ SLUITEN</button>';
-    html+='</div></div></div>';
-  });
+
+  // ── Verkooporders ──
+  if(verkoop.length){
+    html+='<div style="font-family:var(--fd);font-size:12px;letter-spacing:2px;color:var(--muted);padding:8px 0 6px;border-bottom:1px solid var(--border)">📦 VERKOOPORDERS ('+verkoop.length+')</div>';
+    verkoop.forEach(function(o){
+      var betalingOk=o.betaling==='betaald';
+      html+='<div style="padding:10px 0;border-bottom:1px solid var(--border)">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">';
+      html+='<div style="flex:1;min-width:0"><div style="font-family:var(--fd);font-size:16px">'+escHtml(o.naam)+'</div>';
+      html+='<div style="font-size:10px;color:var(--muted);margin-top:2px">'+displayDate(o.datum)+' &middot; '+(STATUS_LBL[o.status]||o.status)+'</div></div>';
+      html+='<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">';
+      html+='<button class="btn-sec '+(betalingOk?'btn-green':'btn-orange')+'" data-oid="'+o.id+'" onclick="dashToggleBetalingBtn(this)" style="font-size:10px;padding:5px 10px">'+(betalingOk?'BETAALD':'BETALEN')+'</button>';
+      html+='<button class="btn-sec btn-green" data-oid="'+o.id+'" onclick="sluitVanDashboardBtn(this)" style="font-size:10px;padding:5px 10px">✓ SLUITEN</button>';
+      html+='</div></div></div>';
+    });
+  }
+
+  // ── Inkooporders ──
+  if(inkoop.length){
+    html+='<div style="font-family:var(--fd);font-size:12px;letter-spacing:2px;color:var(--muted);padding:8px 0 6px;border-bottom:1px solid var(--border)'+(verkoop.length?';margin-top:6px':'')+'">';
+    html+='🛒 INKOOPORDERS ('+inkoop.length+')</div>';
+    inkoop.forEach(function(o){
+      var totaal=0;
+      (o.regels||[]).forEach(function(r){totaal+=(r.prijs||0)*(r.aantal||1);});
+      html+='<div style="padding:10px 0;border-bottom:1px solid var(--border)">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">';
+      html+='<div style="flex:1;min-width:0"><div style="font-family:var(--fd);font-size:16px">'+escHtml(o.leverancier||'Onbekend')+'</div>';
+      html+='<div style="font-size:10px;color:var(--muted);margin-top:2px">'+displayDate(o.datum)+(totaal?' &middot; €'+totaal.toFixed(2):'')+'</div></div>';
+      html+='<button class="btn-sec btn-green" onclick="showTab(\'inkoop\')" style="font-size:10px;padding:5px 10px;flex-shrink:0">BEKIJKEN</button>';
+      html+='</div></div>';
+    });
+  }
+
   el.innerHTML=html;
 }
 function dashToggleBetalingBtn(btn){var id=btn.getAttribute('data-oid');if(id)toggleBetaling(id);}
