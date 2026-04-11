@@ -3373,41 +3373,118 @@ function renderLineup(){
 
 function renderSchema(LU){
   var wrap=document.getElementById('lu-schema');if(!wrap)return;
-  if(!LU.podia.length||!LU.artiesten.length){wrap.innerHTML='<div style="color:var(--muted);font-size:11px;padding:8px">Voeg podia en artiesten toe om het schema te zien.</div>';return;}
+  if(!LU.podia.length||!LU.artiesten.length){
+    wrap.innerHTML='<div style="color:var(--muted);font-size:12px;padding:12px;text-align:center">Voeg podia en artiesten toe om het schema te zien.</div>';
+    return;
+  }
   var starts=LU.artiesten.map(function(a){return a.start;}).filter(Boolean).sort();
   var eindes=LU.artiesten.map(function(a){return a.einde;}).filter(Boolean).sort();
-  if(!starts.length){wrap.innerHTML='<div style="color:var(--muted);font-size:11px;padding:8px">Stel tijdslots in om het schema te zien.</div>';return;}
+  if(!starts.length){
+    wrap.innerHTML='<div style="color:var(--muted);font-size:12px;padding:12px;text-align:center">Stel tijdslots in voor artiesten om het schema te zien.</div>';
+    return;
+  }
+
+  // Tijdbereik berekenen (afgerond op uren, met marge)
   var startH=parseInt(starts[0].split(':')[0]);
   var eindeH=parseInt(eindes[eindes.length-1].split(':')[0])+1;
   if(eindeH<=startH)eindeH=startH+8;
   var totalH=eindeH-startH;
-  var PPH=80;var LABEL=90;
-  var html='<div style="position:relative;min-width:'+(LABEL+totalH*PPH+20)+'px">';
-  // Uurtijden header
-  html+='<div style="display:flex;margin-left:'+LABEL+'px;margin-bottom:4px">';
-  for(var h=startH;h<=eindeH;h++){html+='<div style="width:'+PPH+'px;font-size:9px;color:var(--muted);flex-shrink:0">'+String(h).padStart(2,'0')+':00</div>';}
+
+  var PPH=88;       // pixels per uur
+  var LABEL=100;    // breedte podiumlabel
+  var TRACK_H=72;   // hoogte per baan
+  var TRACK_GAP=10; // ruimte tussen banen
+  var HDR_H=36;     // hoogte tijdsheader
+  var b=document.body;
+  var isLight=b.classList.contains('ksv-light')||(!b.classList.contains('ksv-dark')&&window.matchMedia('(prefers-color-scheme: light)').matches);
+
+  // Kleurpalet
+  var palette={
+    interesse: {bg:'#fb923c', border:'#ea580c', text:'#000'},
+    bevestigd: {bg:'#4ade80', border:'#16a34a', text:'#000'},
+    contract:  {bg:'#34d399', border:'#059669', text:'#000'},
+    geannuleerd:{bg:'#f87171',border:'#dc2626', text:'#fff'}
+  };
+  var stripeA=isLight?'rgba(0,0,0,0.03)':'rgba(255,255,255,0.025)';
+  var stripeB=isLight?'rgba(0,0,0,0.06)':'rgba(255,255,255,0.05)';
+  var hdrBg  =isLight?'rgba(0,0,0,0.05)':'rgba(255,255,255,0.04)';
+  var tickClr=isLight?'rgba(0,0,0,0.15)':'rgba(255,255,255,0.12)';
+  var lblClr =isLight?'rgba(0,0,0,0.55)':'rgba(245,240,232,0.55)';
+  var gapBdr =isLight?'rgba(0,0,0,0.15)':'rgba(255,255,255,0.15)';
+  var trackBg=isLight?'rgba(0,0,0,0.03)':'rgba(255,255,255,0.02)';
+
+  var totalW=LABEL+totalH*PPH+24;
+
+  var html='<div style="overflow-x:auto;overflow-y:visible;padding-bottom:4px">';
+  html+='<div style="position:relative;min-width:'+totalW+'px;padding:0 0 8px 0">';
+
+  // ── Tijdsheader ──
+  html+='<div style="display:flex;margin-left:'+LABEL+'px;height:'+HDR_H+'px;margin-bottom:6px;background:'+hdrBg+';border-radius:4px;align-items:flex-end;padding-bottom:8px;border:1px solid var(--border)">';
+  for(var h=startH;h<=eindeH;h++){
+    var isLast=(h===eindeH);
+    html+='<div style="width:'+(isLast?0:PPH)+'px;flex-shrink:0;position:relative">';
+    html+='<span style="font-family:var(--fd);font-size:13px;color:'+lblClr+';letter-spacing:1px;padding-left:6px">'+String(h).padStart(2,'0')+'<span style="font-size:10px;opacity:.6">:00</span></span>';
+    if(!isLast)html+='<span style="position:absolute;top:0;right:0;bottom:0;width:1px;background:'+tickClr+'"></span>';
+    html+='</div>';
+  }
   html+='</div>';
-  LU.podia.forEach(function(p){
+
+  // ── Podia banen ──
+  LU.podia.forEach(function(p, pIdx){
     var pa=LU.artiesten
       .filter(function(a){return a.podiumId===p.id&&a.start&&a.einde&&a.status!=='geannuleerd';})
       .slice().sort(function(a,b){return a.start.localeCompare(b.start);});
-    html+='<div style="display:flex;align-items:center;margin-bottom:8px">';
-    html+='<div style="width:'+LABEL+'px;font-family:var(--fd);font-size:11px;color:var(--accent);flex-shrink:0;padding-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(p.naam)+'</div>';
-    html+='<div style="position:relative;height:44px;flex:1;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:2px">';
-    // Uurlijnen
-    for(var h2=0;h2<totalH;h2++){
-      html+='<div style="position:absolute;top:0;bottom:0;left:'+(h2*PPH)+'px;width:1px;background:var(--border)"></div>';
+
+    var isEven=pIdx%2===0;
+    html+='<div style="display:flex;align-items:stretch;margin-bottom:'+TRACK_GAP+'px">';
+
+    // Podium label
+    html+='<div style="width:'+LABEL+'px;flex-shrink:0;display:flex;align-items:center;padding:0 10px 0 2px">';
+    html+='<div style="border-left:3px solid var(--accent);padding-left:8px;width:100%">';
+    html+='<div style="font-family:var(--fd);font-size:14px;letter-spacing:1px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(p.naam)+'</div>';
+    if(p.beschrijving)html+='<div style="font-size:9px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(p.beschrijving)+'</div>';
+    html+='</div></div>';
+
+    // Tijdlijn baan
+    html+='<div style="position:relative;height:'+TRACK_H+'px;flex:1;border-radius:4px;overflow:hidden;border:1px solid var(--border)">';
+
+    // Uur-alternerende achtergrondstripes
+    for(var hx=0;hx<totalH;hx++){
+      var bg=(hx%2===0)?stripeA:stripeB;
+      html+='<div style="position:absolute;top:0;bottom:0;left:'+(hx*PPH)+'px;width:'+PPH+'px;background:'+bg+'"></div>';
+      // Uurlijn
+      html+='<div style="position:absolute;top:0;bottom:0;left:'+(hx*PPH)+'px;width:1px;background:'+tickClr+'"></div>';
     }
+    // Laatste uurlijn
+    html+='<div style="position:absolute;top:0;bottom:0;left:'+(totalH*PPH)+'px;width:1px;background:'+tickClr+'"></div>';
+
     // Artiesten blokken
-    pa.forEach(function(a,i){
+    pa.forEach(function(a, i){
       var aS=parseInt(a.start.split(':')[0])+(parseInt(a.start.split(':')[1])||0)/60;
       var aE=parseInt(a.einde.split(':')[0])+(parseInt(a.einde.split(':')[1])||0)/60;
-      var left=(aS-startH)*PPH;var width=(aE-aS)*PPH;
-      var col={interesse:'var(--orange)',bevestigd:'var(--green)',contract:'#4ade80',geannuleerd:'var(--red)'}[a.status]||'var(--blue)';
-      html+='<div style="position:absolute;top:4px;bottom:4px;left:'+left+'px;width:'+(width-2)+'px;background:'+col+';border-radius:2px;padding:0 5px;display:flex;align-items:center;overflow:hidden;z-index:1" title="'+escHtml(a.naam)+' | '+a.start+' – '+a.einde+'">';
-      html+='<span style="font-family:var(--fd);font-size:10px;color:#000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(a.naam)+'</span>';
+      var left=(aS-startH)*PPH;
+      var width=Math.max(4,(aE-aS)*PPH-3);
+      var pal=palette[a.status]||{bg:'var(--blue)',border:'var(--blue)',text:'#fff'};
+      var durMin=Math.round((aE-aS)*60);
+
+      // Blok
+      html+='<div title="'+escHtml(a.naam)+' | '+a.start+' – '+a.einde+' ('+durMin+'m)" style="'
+        +'position:absolute;top:6px;bottom:6px;left:'+left+'px;width:'+width+'px;'
+        +'background:'+pal.bg+';border-left:3px solid '+pal.border+';'
+        +'border-radius:3px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.25);z-index:2;'
+        +'display:flex;flex-direction:column;justify-content:center;padding:0 7px;cursor:default">';
+
+      // Naam
+      var naamKort=a.naam.length>18&&width<130?a.naam.slice(0,16)+'…':a.naam;
+      html+='<div style="font-family:var(--fd);font-size:14px;color:'+pal.text+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.1">'+escHtml(naamKort)+'</div>';
+
+      // Tijdslot + duur (alleen bij genoeg breedte)
+      if(width>=56){
+        html+='<div style="font-size:9px;color:'+pal.text+';opacity:0.75;margin-top:2px;white-space:nowrap">'+a.start+'–'+a.einde+'</div>';
+      }
       html+='</div>';
-      // Tijdgat naar volgende artiest op dit podium
+
+      // Gap naar volgende artiest
       if(i<pa.length-1){
         var volgende=pa[i+1];
         var gapS=aE;
@@ -3416,15 +3493,35 @@ function renderSchema(LU){
           var gapLeft=(gapS-startH)*PPH;
           var gapWidth=(gapE-gapS)*PPH;
           var gapMin=Math.round((gapE-gapS)*60);
-          html+='<div style="position:absolute;top:4px;bottom:4px;left:'+gapLeft+'px;width:'+gapWidth+'px;background:rgba(255,255,255,0.04);border:1px dashed rgba(255,255,255,0.15);border-radius:2px;display:flex;align-items:center;justify-content:center;z-index:0" title="Pauze: '+gapMin+' min">';
-          if(gapWidth>30)html+='<span style="font-size:9px;color:rgba(255,255,255,0.3)">'+gapMin+'m</span>';
+          html+='<div style="position:absolute;top:6px;bottom:6px;left:'+gapLeft+'px;width:'+gapWidth+'px;'
+            +'border:1px dashed '+gapBdr+';border-radius:3px;display:flex;align-items:center;justify-content:center;z-index:1" title="Wissel: '+gapMin+' min">';
+          if(gapWidth>=32)html+='<span style="font-size:9px;color:'+lblClr+'">'+gapMin+'m</span>';
           html+='</div>';
         }
       }
     });
-    html+='</div></div>';
+
+    // Lege baan indicatie
+    if(!pa.length){
+      html+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">';
+      html+='<span style="font-size:10px;color:'+lblClr+';letter-spacing:2px">GEEN ARTIESTEN</span>';
+      html+='</div>';
+    }
+
+    html+='</div></div>'; // einde baan + rij
+  });
+
+  // ── Legenda ──
+  html+='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">';
+  [['interesse','#fb923c','INTERESSE'],['bevestigd','#4ade80','BEVESTIGD'],['contract','#34d399','CONTRACT']].forEach(function(l){
+    html+='<div style="display:flex;align-items:center;gap:5px">';
+    html+='<span style="display:inline-block;width:12px;height:12px;background:'+l[1]+';border-radius:2px;flex-shrink:0"></span>';
+    html+='<span style="font-size:10px;letter-spacing:1px;color:'+lblClr+'">'+l[2]+'</span>';
+    html+='</div>';
   });
   html+='</div>';
+
+  html+='</div></div>';
   wrap.innerHTML=html;
 }
 
