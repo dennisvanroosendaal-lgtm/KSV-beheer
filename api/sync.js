@@ -12,6 +12,14 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Token-validatie: KSV_TOKEN in Vercel Environment Variables moet overeenkomen
+  // met het token dat de browser meestuurt als X-KSV-Token header.
+  var expected = process.env.KSV_TOKEN;
+  var received  = req.headers['x-ksv-token'] || '';
+  if (expected && received !== expected) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   var headers = {
     'X-Master-Key': process.env.JSONBIN_API_KEY
   };

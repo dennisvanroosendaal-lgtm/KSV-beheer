@@ -946,6 +946,7 @@ function checkAuth(){
   if(!inp)return;
   if(inp.value===KSV_PASSWORD){
     sessionStorage.setItem('ksv_auth','1');
+    sessionStorage.setItem('ksv_token',inp.value);
     document.getElementById('ksv-auth').classList.add('hidden');
     startApp();
   } else {
@@ -964,6 +965,7 @@ function checkAuth(){
 // ════════════════════════════════════════════════════
 // Cloud sync via Vercel proxy — API-sleutel staat in Vercel Environment Variables (JSONBIN_API_KEY)
 var KSV_API_URL = '/api/sync';
+function getToken(){return sessionStorage.getItem('ksv_token')||'';}
 
 var _syncSaving   = false;
 var _syncTimeout  = null;
@@ -1015,7 +1017,8 @@ function _applyCloudRecord(record){
 function syncPollVersie(){
   if(_syncSaving)return;
   fetch(KSV_API_URL,{
-    method:'GET'
+    method:'GET',
+    headers:{'X-KSV-Token':getToken()}
   })
   .then(function(res){
     if(!res.ok)throw new Error('HTTP '+res.status);
@@ -1055,7 +1058,8 @@ function syncOpslaan(){
     fetch(KSV_API_URL,{
       method:'PUT',
       headers:{
-        'Content-Type':'application/json'
+        'Content-Type':'application/json',
+        'X-KSV-Token':getToken()
       },
       body:JSON.stringify(S)
     })
