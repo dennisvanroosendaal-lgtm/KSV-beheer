@@ -1021,12 +1021,20 @@ function _syncErrReden(msg){
 // Versienummer zit in S._syncVersion (geen JSONBin-metadata nodig — gratis plan)
 function _applyCloudRecord(record){
   if(!record||!record.producten)return;
-  // Overschrijf lokale data NIET als er ongepushte offline-wijzigingen zijn
-  if(_hasPendingSync){
-    console.warn('[KSV] _applyCloudRecord: lokale wijzigingen wachten op sync — cloud-update overgeslagen (versie',record._syncVersion||0,')');
+  var versie=record._syncVersion||0;
+  // Overschrijf lokale data NIET als er ongepushte wijzigingen zijn én de cloud NIET nieuwer is.
+  // Als de cloud wél nieuwer is (ander apparaat heeft gepusht), wint de cloud altijd —
+  // anders kan een stale _hasPendingSync vlag de telefoon voor altijd blokkeren.
+  if(_hasPendingSync&&versie<=_lokaalVersie){
+    console.warn('[KSV] _applyCloudRecord: lokale wijzigingen wachten en cloud is niet nieuwer (cloud',versie,'<= lokaal',_lokaalVersie,') — overgeslagen');
     return;
   }
-  var versie=record._syncVersion||0;
+  if(_hasPendingSync){
+    // Cloud is nieuwer dan onze lokale versie — pending-vlag wissen, cloud wint
+    console.warn('[KSV] _applyCloudRecord: cloud (versie',versie,') is nieuwer dan lokaal (',_lokaalVersie,') — pending-vlag gewist, cloud toegepast');
+    _hasPendingSync=false;
+    localStorage.removeItem('ksv3_pending');
+  }
   S=record;
   if(!S.ticketVerkopen)S.ticketVerkopen=[];
   if(!S.settings)S.settings={verzend:6.95};
@@ -1064,6 +1072,9 @@ function syncPollVersie(){
       _applyCloudRecord(record);
       renderAll();
       if(!wasLeeg)showToast('☁️ BIJGEWERKT VANAF CLOUD');
+    } else if(_hasPendingSync){
+      // Cloud is niet nieuwer maar wij hebben ongepushte wijzigingen — push nu
+      syncOpslaan();
     }
     updateSyncStatus('ok');
   })
@@ -1146,13 +1157,10 @@ function initSyncVersie(){
 
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='visible'){
-    // Zelfde logica als online-handler: push eerst als er uitstaande wijzigingen zijn
-    if(_hasPendingSync){
-      if(_syncTimeout){clearTimeout(_syncTimeout);_syncTimeout=null;}
-      syncOpslaan();
-    } else {
-      syncPollVersie();
-    }
+    // Poll eerst; syncPollVersie pusht automatisch als _hasPendingSync && cloud niet nieuwer is.
+    // Dit voorkomt dat stale lokale data de cloud overschrijft als een ander apparaat
+    // ondertussen wijzigingen heeft gepusht.
+    syncPollVersie();
     startPolling();
   } else {
     if(_pollInterval)clearInterval(_pollInterval);
@@ -1160,15 +1168,10 @@ document.addEventListener('visibilitychange',function(){
 });
 
 window.addEventListener('online',function(){
-  if(_hasPendingSync){
-    // Eerst lokale wijzigingen pushen voordat cloud-data wordt opgehaald
-    showToast('VERBINDING HERSTELD — LOKALE WIJZIGINGEN WORDEN GESYNCHRONISEERD');
-    if(_syncTimeout){clearTimeout(_syncTimeout);_syncTimeout=null;}
-    syncOpslaan();
-  } else {
-    showToast('VERBINDING HERSTELD');
-    syncLadenVolledig();
-  }
+  showToast('VERBINDING HERSTELD');
+  // Poll eerst (check of cloud nieuwer is); syncPollVersie pusht pending wijzigingen
+  // automatisch als de cloud niet nieuwer is dan onze lokale versie.
+  syncLadenVolledig();
   startPolling();
 });
 window.addEventListener('offline',function(){
@@ -4007,12 +4010,9 @@ function startApp(){
   updateLandingStats();
   if('Notification' in window && Notification.permission==='granted')herstelHerinneringen();
   initSyncVersie(); // Herstelt ook _hasPendingSync na pagina-herlaad
-  if(_hasPendingSync){
-    // Niet-gepushte lokale wijzigingen aanwezig — push eerst, poll daarna
-    syncOpslaan();
-  } else {
-    syncLadenVolledig();
-  }
+  // Poll altijd eerst: _applyCloudRecord past guard aan op cloud-versie,
+  // en syncPollVersie pusht automatisch als _hasPendingSync && cloud niet nieuwer is.
+  syncLadenVolledig();
   startPolling();
   document.getElementById('lp-cta-btn').addEventListener('click',function(){hideLanding('dashboard');});
   document.getElementById('home-btn').addEventListener('click',showLanding);
