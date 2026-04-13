@@ -438,6 +438,7 @@
     <div class="stat-row"><span class="stat-label">🧢 Inkoop merchandise</span><span class="stat-value red" id="dash-kosten-merch">€0</span></div>
     <div class="stat-row"><span class="stat-label">🍺 Inkoop consumables</span><span class="stat-value red" id="dash-kosten-cons">€0</span></div>
     <div class="stat-row"><span class="stat-label">⚙️ Services &amp; kosten</span><span class="stat-value red" id="dash-kosten-serv">€0</span></div>
+    <div class="stat-row"><span class="stat-label">🎵 Artiestenkosten</span><span class="stat-value red" id="dash-kosten-artiesten">€0</span></div>
     <div class="stat-row"><span class="stat-label">📦 Verwacht</span><span class="stat-value orange" id="dash-kosten-verwacht">€0</span></div>
   </div>
   <div class="card"><div class="card-title">OPEN ORDERS</div><div id="dash-open-orders"></div></div>
@@ -529,6 +530,7 @@
     <div class="stat-row"><span class="stat-label">Merchandise omzet open</span><span class="stat-value blue" id="fin-open-omzet">&#8364;0</span></div>
     <div class="stat-row"><span class="stat-label">Ticket omzet open</span><span class="stat-value blue" id="fin-open-ticket">&#8364;0</span></div>
     <div class="stat-row"><span class="stat-label">Inkoopkosten onbetaald</span><span class="stat-value orange" id="fin-inkoop-open">&#8364;0</span></div>
+    <div class="stat-row"><span class="stat-label">&#127908; Artiestenkosten onbetaald</span><span class="stat-value orange" id="fin-artiesten-open">&#8364;0</span></div>
   </div>
   <div class="card"><div class="card-title">PER PRODUCT</div><div id="fin-per-product"></div></div>
   <div class="card">
@@ -1293,11 +1295,14 @@ function calcKPIs(){
   });
 
   var inkoopArtiesten=0;
+  var openArtiesten=0;
   var _LU=loadLineup();
   _LU.artiesten.filter(function(a){return (a.status==='bevestigd'||a.status==='contract');}).forEach(function(a){
     var gage=parseFloat(a.gageOnderhandeld||a.gageGevraagd||0);
-    if(a.betaalStatus==='volledig')inkoopArtiesten+=gage;
-    else if(a.betaalStatus==='aanbetaling')inkoopArtiesten+=gage*0.5;
+    inkoopArtiesten+=gage;
+    if(a.betaalStatus==='volledig'){/* volledig betaald, geen open bedrag */}
+    else if(a.betaalStatus==='aanbetaling')openArtiesten+=gage*0.5;
+    else openArtiesten+=gage;
   });
   var totaalOmzet=omzetMerch+omzetTicket;
   var totaalKosten=inkoopMerch+inkoopCons+inkoopServ+inkoopArtiesten-retourCredit;
@@ -1320,6 +1325,7 @@ function calcKPIs(){
     omzetMerch:omzetMerch, omzetTicket:omzetTicket,
     totaalOmzet:totaalOmzet, inkoopMerch:inkoopMerch,
     inkoopCons:inkoopCons, inkoopServ:inkoopServ, inkoopArtiesten:inkoopArtiesten,
+    openArtiesten:openArtiesten,
     // [NIEUW] inkoopIntern apart teruggeven voor weergave in financieel
     inkoopIntern:inkoopIntern,
     retourCredit:retourCredit, totaalKosten:totaalKosten,
@@ -1862,6 +1868,7 @@ function renderDashboard(){
   sd('dash-kosten-merch',fmt(kpi.inkoopMerch));
   sd('dash-kosten-cons',fmt(kpi.inkoopCons));
   sd('dash-kosten-serv',fmt(kpi.inkoopServ));
+  sd('dash-kosten-artiesten',fmt(kpi.inkoopArtiesten));
 
   // Verwachte kosten (onbetaald)
   var kostenVerwacht=0;
@@ -2315,6 +2322,7 @@ function renderFinancieel(){
   sd('fin-open-omzet',fmt(k.openOmzet));
   sd('fin-open-ticket',fmt(k.openTicket));
   sd('fin-inkoop-open',fmt(k.openInkoop));
+  sd('fin-artiesten-open',fmt(k.openArtiesten||0));
 
   function renderConsumablesOverzicht(){
   var wrap=document.getElementById('fin-consumables-wrap');if(!wrap)return;
