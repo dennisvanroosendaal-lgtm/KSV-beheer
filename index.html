@@ -3280,6 +3280,14 @@ function resetAlles(){
   var bevestig=document.getElementById('reset-bevestig');
   if(!bevestig||bevestig.value!=='WISSEN'){showToast('TYPE "WISSEN" OM TE BEVESTIGEN');return;}
   if(!confirm('LAATSTE WAARSCHUWING: Alle data wordt permanent verwijderd. Doorgaan?'))return;
+  // Gebruik Unix-timestamp als versienummer zodat alle andere apparaten de reset ophalen.
+  // Sequentiële versienummers op andere apparaten zijn altijd lager dan een timestamp (~1,7 miljard),
+  // dus zij zullen de lege cloud-data accepteren in plaats van hun oude data te pushen.
+  var resetVersie=Math.floor(Date.now()/1000);
+  _lokaalVersie=resetVersie;
+  localStorage.setItem('ksv3_versie',String(resetVersie));
+  localStorage.removeItem('ksv3_pending');
+  _hasPendingSync=false;
   S={
     producten:[],voorraad:{},inkoopOrders:[],verkoopOrders:[],
     ticketVerkopen:[],lineup:{artiesten:[],podia:[]},settings:{verzend:6.95}
