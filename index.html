@@ -937,26 +937,47 @@ initTheme();
 
 // ════════════════════════════════════════════════════
 // WACHTWOORDBEVEILIGING
-// Verander KSV_PASSWORD naar jouw eigen wachtwoord.
-// De JSONBin API-sleutel staat veilig in Vercel Environment Variables (zie api/sync.js).
+// Het wachtwoord staat NIET meer in deze broncode.
+// Validatie gebeurt server-side via /api/auth (zie api/auth.js).
+// Stel KSV_PASSWORD in als Vercel Environment Variable.
 // ════════════════════════════════════════════════════
-var KSV_PASSWORD = 'kerkwerve2026';
 
 function checkAuth(){
   var inp=document.getElementById('auth-input');
   var err=document.getElementById('auth-err');
   if(!inp)return;
-  if(inp.value===KSV_PASSWORD){
-    sessionStorage.setItem('ksv_auth','1');
-    sessionStorage.setItem('ksv_token',inp.value);
-    document.getElementById('ksv-auth').classList.add('hidden');
-    startApp();
-  } else {
-    err.textContent='Onjuist wachtwoord.';
+  var wachtwoord=inp.value;
+  if(!wachtwoord)return;
+
+  // Invoer uitschakelen tijdens het verzoek om dubbele submit te voorkomen
+  inp.disabled=true;
+
+  fetch('/api/auth',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:wachtwoord})
+  })
+  .then(function(res){return res.json().then(function(d){return{ok:res.ok,data:d};})})
+  .then(function(result){
+    inp.disabled=false;
+    if(result.ok&&result.data.token){
+      sessionStorage.setItem('ksv_auth','1');
+      sessionStorage.setItem('ksv_token',result.data.token);
+      document.getElementById('ksv-auth').classList.add('hidden');
+      startApp();
+    } else {
+      err.textContent=(result.data&&result.data.error)||'Onjuist wachtwoord.';
+      inp.classList.add('fout');
+      inp.value='';
+      setTimeout(function(){inp.classList.remove('fout');err.textContent='';},1200);
+    }
+  })
+  .catch(function(){
+    inp.disabled=false;
+    err.textContent='Verbindingsfout — probeer opnieuw.';
     inp.classList.add('fout');
-    inp.value='';
-    setTimeout(function(){inp.classList.remove('fout');err.textContent='';},1200);
-  }
+    setTimeout(function(){inp.classList.remove('fout');err.textContent='';},2000);
+  });
 }
 
 // ════════════════════════════════════════════════════
@@ -969,12 +990,13 @@ function checkAuth(){
 var KSV_API_URL = '/api/sync';
 function getToken(){return sessionStorage.getItem('ksv_token')||'';}
 
-var _syncSaving   = false;
-var _syncTimeout  = null;
-var _pollInterval = null;
-var _lokaalVersie = 0;
+var _syncSaving     = false;
+var _syncTimeout    = null;
+var _pollInterval   = null;
+var _lokaalVersie   = 0;
+var _hasPendingSync = false; // true als een PUT mislukte en lokale wijzigingen nog niet naar cloud zijn gepusht
 // Poll elke 30s (was 15s) — gratis plan heeft request-limieten
-var POLL_MS       = 30000;
+var POLL_MS         = 30000;
 
 function updateSyncStatus(state, extra){
   var el=document.getElementById('sync-status');if(!el)return;
@@ -999,6 +1021,11 @@ function _syncErrReden(msg){
 // Versienummer zit in S._syncVersion (geen JSONBin-metadata nodig — gratis plan)
 function _applyCloudRecord(record){
   if(!record||!record.producten)return;
+  // Overschrijf lokale data NIET als er ongepushte offline-wijzigingen zijn
+  if(_hasPendingSync){
+    console.warn('[KSV] _applyCloudRecord: lokale wijzigingen wachten op sync — cloud-update overgeslagen (versie',record._syncVersion||0,')');
+    return;
+  }
   var versie=record._syncVersion||0;
   S=record;
   if(!S.ticketVerkopen)S.ticketVerkopen=[];
@@ -1057,34 +1084,50 @@ function syncOpslaan(){
   _syncTimeout=setTimeout(function(){
     _syncTimeout=null; // Markeer dat de wachttijd voorbij is (vlag voor syncPollVersie)
     if(_syncSaving){syncOpslaan();return;} // Vorige PUT nog bezig — herplan
-    _syncSaving=true;
-    updateSyncStatus('opslaan');
-    // Versie ophogen in de data zelf — geen JSONBin-metadata nodig
-    S._syncVersion=(_lokaalVersie||0)+1;
-    fetch(KSV_API_URL,{
-      method:'PUT',
-      headers:{
-        'Content-Type':'application/json',
-        'X-KSV-Token':getToken()
-      },
-      body:JSON.stringify(S)
-    })
-    .then(function(res){
-      if(!res.ok)throw new Error('HTTP '+res.status);
-      return res.json();
-    })
-    .then(function(){
-      _lokaalVersie=S._syncVersion;
-      localStorage.setItem('ksv3_versie',String(_lokaalVersie));
-      updateSyncStatus('ok');
-      _syncSaving=false;
-    })
-    .catch(function(err){
-      console.warn('Opslaan fout:',err.message);
+    _syncSlaanUitvoeren(1);
+  },1500);
+}
+
+// Voert de daadwerkelijke PUT uit, met retry bij mislukking (max 3 pogingen)
+function _syncSlaanUitvoeren(poging){
+  var maxPogingen=3;
+  var retryDelays=[5000,15000,30000];
+  _syncSaving=true;
+  updateSyncStatus('opslaan');
+  // Versie ophogen in de data zelf — geen JSONBin-metadata nodig
+  S._syncVersion=(_lokaalVersie||0)+1;
+  fetch(KSV_API_URL,{
+    method:'PUT',
+    headers:{
+      'Content-Type':'application/json',
+      'X-KSV-Token':getToken()
+    },
+    body:JSON.stringify(S)
+  })
+  .then(function(res){
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    return res.json();
+  })
+  .then(function(){
+    _lokaalVersie=S._syncVersion;
+    localStorage.setItem('ksv3_versie',String(_lokaalVersie));
+    _hasPendingSync=false;
+    localStorage.removeItem('ksv3_pending');
+    updateSyncStatus('ok');
+    _syncSaving=false;
+  })
+  .catch(function(err){
+    console.warn('Opslaan fout (poging '+poging+'):',err.message);
+    if(poging<maxPogingen&&!document.hidden){
+      updateSyncStatus('fout','SYNC HERPOGING '+poging+'/'+maxPogingen);
+      setTimeout(function(){_syncSlaanUitvoeren(poging+1);},retryDelays[poging-1]);
+    } else {
+      _hasPendingSync=true;
+      localStorage.setItem('ksv3_pending','1');
       updateSyncStatus('fout','SYNC MISLUKT');
       _syncSaving=false;
-    });
-  },1500);
+    }
+  });
 }
 
 function startPolling(){
@@ -1097,6 +1140,8 @@ function initSyncVersie(){
   _lokaalVersie=isNaN(v)?0:v;
   // Gebruik ook _syncVersion uit geladen data als die hoger is
   if(S._syncVersion&&S._syncVersion>_lokaalVersie)_lokaalVersie=S._syncVersion;
+  // Herstel de pending-vlag na pagina-herlaad (als een eerdere PUT mislukte)
+  if(localStorage.getItem('ksv3_pending')==='1')_hasPendingSync=true;
 }
 
 document.addEventListener('visibilitychange',function(){
@@ -1109,8 +1154,15 @@ document.addEventListener('visibilitychange',function(){
 });
 
 window.addEventListener('online',function(){
-  showToast('VERBINDING HERSTELD');
-  syncLadenVolledig();
+  if(_hasPendingSync){
+    // Eerst lokale wijzigingen pushen voordat cloud-data wordt opgehaald
+    showToast('VERBINDING HERSTELD — LOKALE WIJZIGINGEN WORDEN GESYNCHRONISEERD');
+    if(_syncTimeout){clearTimeout(_syncTimeout);_syncTimeout=null;}
+    syncOpslaan();
+  } else {
+    showToast('VERBINDING HERSTELD');
+    syncLadenVolledig();
+  }
   startPolling();
 });
 window.addEventListener('offline',function(){
@@ -1127,7 +1179,7 @@ function renderAll(){
   if(!active)return;
   var id=active.id;
   // nav bijwerken na cloud sync
-  try{updateNav(id.replace('tab-',''));}catch(e){}
+  try{updateNav(id.replace('tab-',''));}catch(e){console.error('[KSV] updateNav fout:',e);}
   var map={
     'tab-dashboard':renderDashboard,'tab-financieel':renderFinancieel,
     'tab-voorraad':renderVoorraad,'tab-overzicht':renderOverzicht,
@@ -1190,8 +1242,8 @@ function load(){
           }
         }
       }
-    }catch(ex){}
-  }catch(e){}
+    }catch(ex){console.error('[KSV] Migratie lineup fout:',ex);}
+  }catch(e){console.error('[KSV] Load fout:',e);}
 }
 
 // ════════════════════════════════════════════════════
@@ -1340,7 +1392,7 @@ function updateLandingStats(){
     var set=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
     set('lp-winst',fmt(k.winst));set('lp-omzet',fmt(k.totaalOmzet));
     set('lp-kosten',fmt(k.totaalKosten));set('lp-orders',k.openOrders);
-  }catch(e){}
+  }catch(e){console.error('[KSV] updateLandingStats fout:',e);}
 }
 
 function showLanding(){
@@ -3592,7 +3644,7 @@ function saveArtiest(){
   saveLineup(LU);
   closeLuModal('modal-artiest');
   try{renderLineup();}catch(e){console.error('renderLineup fout na save:',e);}
-  try{renderFinancieel();}catch(e){}
+  try{renderFinancieel();}catch(e){console.error('[KSV] renderFinancieel fout na saveArtiest:',e);}
   showToast('ARTIEST OPGESLAGEN');
 }
 
@@ -3898,8 +3950,13 @@ function startApp(){
   renderDashboard();
   updateLandingStats();
   if('Notification' in window && Notification.permission==='granted')herstelHerinneringen();
-  initSyncVersie();
-  syncLadenVolledig();
+  initSyncVersie(); // Herstelt ook _hasPendingSync na pagina-herlaad
+  if(_hasPendingSync){
+    // Niet-gepushte lokale wijzigingen aanwezig — push eerst, poll daarna
+    syncOpslaan();
+  } else {
+    syncLadenVolledig();
+  }
   startPolling();
   document.getElementById('lp-cta-btn').addEventListener('click',function(){hideLanding('dashboard');});
   document.getElementById('home-btn').addEventListener('click',showLanding);
