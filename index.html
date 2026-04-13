@@ -1497,7 +1497,8 @@ function showTab(name){
   if(content)content.classList.add('active');
   var renders={dashboard:renderDashboard,voorraad:renderVoorraad,verkoop:renderVerkoop,
     inkoop:renderInkoop,afgerond:renderAfgerond,financieel:renderFinancieel,
-    tickets:renderTickets,overzicht:renderOverzicht,producten:renderProducten};
+    tickets:renderTickets,overzicht:renderOverzicht,producten:renderProducten,
+    lineup:renderLineup};
   if(renders[name])renders[name]();
   updateNav(name);
 }
@@ -4008,6 +4009,7 @@ function startApp(){
   load();
   renderDashboard();
   updateLandingStats();
+  renderLineup(); // Render lineup direct vanuit localStorage — voorkomt lege tab na page refresh
   if('Notification' in window && Notification.permission==='granted')herstelHerinneringen();
   initSyncVersie(); // Herstelt ook _hasPendingSync na pagina-herlaad
   // Poll altijd eerst: _applyCloudRecord past guard aan op cloud-versie,
