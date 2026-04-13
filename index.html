@@ -3757,7 +3757,17 @@ function renderLineup(){
   renderSchema(LU);
 
   var tabel=document.getElementById('lu-tabel');if(!tabel)return;
-  if(!artiesten.length){tabel.innerHTML='<div class="empty"><div style="font-size:32px;margin-bottom:8px">🎤</div>Nog geen artiesten toegevoegd</div>';return;}
+  if(!artiesten.length){
+    if(LU.artiesten.length&&(fStatus||fPodium||fBetaal)){
+      // Artiesten bestaan maar worden verborgen door een actieve filter
+      tabel.innerHTML='<div class="empty"><div style="font-size:28px;margin-bottom:8px">🔍</div>'
+        +'<div style="margin-bottom:8px">Filter actief — <strong>'+LU.artiesten.length+'</strong> artiest(en) verborgen</div>'
+        +'<button class="btn-sec" onclick="resetLineupFilters()" style="font-size:11px">FILTERS WISSEN</button></div>';
+    } else {
+      tabel.innerHTML='<div class="empty"><div style="font-size:32px;margin-bottom:8px">🎤</div>Nog geen artiesten toegevoegd</div>';
+    }
+    return;
+  }
 
   var SLBL={interesse:'🟡 INTERESSE',bevestigd:'🟢 BEVESTIGD',contract:'✅ CONTRACT',geannuleerd:'❌ GEANNULEERD'};
   var CLBL={niet:'📄 NIET VERSTUURD',verstuurd:'📬 VERSTUURD',ondertekend:'✅ ONDERTEKEND'};
@@ -3809,6 +3819,16 @@ function renderLineup(){
   });
   html+='</table></div>';
   tabel.innerHTML=html;
+}
+
+function resetLineupFilters(){
+  var fs=document.getElementById('lu-filter-status');
+  var fp=document.getElementById('lu-filter-podium');
+  var fb=document.getElementById('lu-filter-betaal');
+  if(fs)fs.value='';
+  if(fp)fp.value='';
+  if(fb)fb.value='';
+  renderLineup();
 }
 
 function renderSchema(LU){
