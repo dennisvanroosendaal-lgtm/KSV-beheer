@@ -1025,6 +1025,9 @@ function syncPollVersie(){
     return res.json();
   })
   .then(function(data){
+    // Sla cloud-update over als er een lokale opslag loopt of wacht — voorkomt
+    // dat een trage GET-response een net opgeslagen boeking overschrijft.
+    if(_syncSaving||_syncTimeout)return;
     var record=data.record;
     var cloudVersie=(record&&record._syncVersion)||0;
     if(cloudVersie>_lokaalVersie){
@@ -1050,7 +1053,8 @@ function syncLadenVolledig(){
 function syncOpslaan(){
   if(_syncTimeout)clearTimeout(_syncTimeout);
   _syncTimeout=setTimeout(function(){
-    if(_syncSaving)return;
+    _syncTimeout=null; // Markeer dat de wachttijd voorbij is (vlag voor syncPollVersie)
+    if(_syncSaving){syncOpslaan();return;} // Vorige PUT nog bezig — herplan
     _syncSaving=true;
     updateSyncStatus('opslaan');
     // Versie ophogen in de data zelf — geen JSONBin-metadata nodig
