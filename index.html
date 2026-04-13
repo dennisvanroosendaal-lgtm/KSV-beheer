@@ -1146,7 +1146,13 @@ function initSyncVersie(){
 
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='visible'){
-    syncPollVersie();
+    // Zelfde logica als online-handler: push eerst als er uitstaande wijzigingen zijn
+    if(_hasPendingSync){
+      if(_syncTimeout){clearTimeout(_syncTimeout);_syncTimeout=null;}
+      syncOpslaan();
+    } else {
+      syncPollVersie();
+    }
     startPolling();
   } else {
     if(_pollInterval)clearInterval(_pollInterval);
@@ -1168,6 +1174,28 @@ window.addEventListener('online',function(){
 window.addEventListener('offline',function(){
   updateSyncStatus('fout','OFFLINE');
   if(_pollInterval)clearInterval(_pollInterval);
+});
+
+// Cross-tab synchronisatie via localStorage storage-event:
+// Wanneer een ander tabblad data opslaat (localStorage.setItem('ksv3',...)),
+// ontvangt dit tabblad een 'storage'-event en werkt zijn eigen S en _lokaalVersie bij.
+// Dit voorkomt dat twee tabs tegelijk dezelfde _syncVersion pushen (versie-collision).
+window.addEventListener('storage',function(event){
+  if(event.key==='ksv3'&&event.newValue&&!_hasPendingSync){
+    try{
+      var newS=JSON.parse(event.newValue);
+      var nieuwVersie=newS._syncVersion||0;
+      if(nieuwVersie>_lokaalVersie){
+        S=newS;
+        _lokaalVersie=nieuwVersie;
+        renderAll();
+      }
+    }catch(e){console.error('[KSV] storage event fout:',e);}
+  }
+  if(event.key==='ksv3_versie'&&event.newValue&&!_hasPendingSync){
+    var v=parseInt(event.newValue||'0');
+    if(!isNaN(v)&&v>_lokaalVersie)_lokaalVersie=v;
+  }
 });
 
 function renderAll(){
