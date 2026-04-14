@@ -83,7 +83,7 @@
 
   /* ── HOOFD NAVIGATIE (5 groepen) ── */
   .main-nav{
-    display:grid;grid-template-columns:repeat(5,1fr);
+    display:grid;grid-template-columns:repeat(6,1fr);
     background:var(--dark);border-bottom:1px solid var(--border);
     position:fixed;top:var(--hdr-h);left:0;right:0;z-index:99;
     height:var(--tabs-h);box-sizing:border-box;
@@ -318,6 +318,152 @@
     border:none;cursor:pointer;border-radius:3px;
   }
   .auth-err{margin-top:10px;font-size:11px;color:var(--red);letter-spacing:1px;min-height:18px;}
+
+/* ===== JARVAS AI ASSISTENT ===== */
+#jarvas-float-btn {
+  position: fixed; bottom: 20px; right: 20px;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--accent); color: #000;
+  font-size: 22px; cursor: pointer; z-index: 300;
+  display: none;
+  align-items: center; justify-content: center;
+  box-shadow: 0 0 16px rgba(255,221,0,0.45);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: none; outline: none;
+}
+#jarvas-float-btn:hover { transform: scale(1.1); box-shadow: 0 0 24px rgba(255,221,0,0.7); }
+#jarvas-float-panel {
+  position: fixed; bottom: 82px; right: 16px;
+  width: 320px; max-height: 480px;
+  background: var(--dark); border: 1px solid var(--accent);
+  border-radius: 12px; z-index: 299; display: none;
+  flex-direction: column; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+#jarvas-float-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: var(--accent); color: #000;
+  font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px;
+}
+#jarvas-float-header button {
+  background: none; border: none; color: #000; font-size: 16px;
+  cursor: pointer; padding: 0; line-height: 1;
+}
+#jarvas-float-status {
+  font-size: 10px; font-family: 'Space Mono', monospace;
+  padding: 0 14px 6px; color: var(--accent); opacity: 0.7;
+}
+#jarvas-float-chat {
+  flex: 1; overflow-y: auto; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+  min-height: 0;
+}
+#jarvas-float-input {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 10px; border-top: 1px solid rgba(255,221,0,0.2);
+}
+#jarvas-float-text {
+  flex: 1; background: var(--black); border: 1px solid rgba(255,221,0,0.3);
+  color: var(--white); border-radius: 6px; padding: 6px 8px;
+  font-size: 12px; font-family: 'Space Mono', monospace; outline: none;
+}
+#jarvas-float-text:focus { border-color: var(--accent); }
+.jarvas-float-send, .jarvas-float-mic-btn {
+  background: none; border: 1px solid rgba(255,221,0,0.4);
+  color: var(--accent); border-radius: 6px; padding: 6px 8px;
+  cursor: pointer; font-size: 13px; transition: background 0.15s;
+}
+.jarvas-float-send:hover, .jarvas-float-mic-btn:hover { background: rgba(255,221,0,0.15); }
+.jarvas-float-mic-btn.jarvas-mic-active {
+  border-color: var(--red); color: var(--red);
+  animation: jarvaspulse 1s infinite;
+}
+.jarvas-msg {
+  max-width: 85%; padding: 7px 10px; border-radius: 8px;
+  font-size: 12px; font-family: 'Space Mono', monospace;
+  line-height: 1.5; word-break: break-word;
+}
+.jarvas-msg-user {
+  align-self: flex-end; background: var(--accent); color: #000;
+  border-bottom-right-radius: 2px;
+}
+.jarvas-msg-bot {
+  align-self: flex-start; background: var(--card);
+  color: var(--white); border-bottom-left-radius: 2px;
+  border: 1px solid rgba(255,221,0,0.15);
+}
+.jarvas-msg-thinking {
+  align-self: flex-start; background: var(--card);
+  color: var(--accent); border: 1px solid rgba(255,221,0,0.15);
+  font-style: italic; opacity: 0.7;
+}
+@keyframes jarvaspulse {
+  0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+}
+/* ===== JARVAS FULL TAB ===== */
+#tab-jarvas {
+  display: none; flex-direction: column;
+  height: calc(100vh - var(--hdr-h) - var(--tabs-h));
+  padding: 0;
+}
+#tab-jarvas.active { display: flex; }
+#jarvas-tab-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 10px; border-bottom: 1px solid rgba(255,221,0,0.2);
+  flex-shrink: 0;
+}
+#jarvas-tab-header h2 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px;
+  letter-spacing: 2px; color: var(--accent); margin: 0;
+}
+#jarvas-tab-statusdot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--green); display: inline-block; margin-right: 6px;
+  box-shadow: 0 0 6px var(--green);
+}
+#jarvas-tab-statuslabel {
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  color: var(--white); opacity: 0.6;
+}
+#jarvas-tab-chat {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  min-height: 0;
+}
+#jarvas-tab-chat .jarvas-msg { max-width: 75%; font-size: 13px; }
+.jarvas-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.jarvas-suggestion-btn {
+  background: none; border: 1px solid rgba(255,221,0,0.35);
+  color: var(--accent); border-radius: 16px; padding: 5px 12px;
+  font-size: 11px; font-family: 'Space Mono', monospace; cursor: pointer;
+  transition: background 0.15s;
+}
+.jarvas-suggestion-btn:hover { background: rgba(255,221,0,0.15); }
+#jarvas-tab-inputbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; border-top: 1px solid rgba(255,221,0,0.2);
+  flex-shrink: 0;
+}
+#jarvas-tab-text {
+  flex: 1; background: var(--black); border: 1px solid rgba(255,221,0,0.3);
+  color: var(--white); border-radius: 8px; padding: 8px 12px;
+  font-size: 13px; font-family: 'Space Mono', monospace; outline: none;
+}
+#jarvas-tab-text:focus { border-color: var(--accent); }
+.jarvas-tab-send, .jarvas-tab-mic {
+  background: none; border: 1px solid rgba(255,221,0,0.4);
+  color: var(--accent); border-radius: 8px; padding: 8px 12px;
+  cursor: pointer; font-size: 15px; transition: background 0.15s;
+}
+.jarvas-tab-send:hover, .jarvas-tab-mic:hover { background: rgba(255,221,0,0.15); }
+.jarvas-tab-mic.jarvas-mic-active { border-color: var(--red); color: var(--red); animation: jarvaspulse 1s infinite; }
+#jarvas-tab-clear {
+  font-size: 11px; color: var(--white); opacity: 0.4;
+  cursor: pointer; font-family: 'Space Mono', monospace;
+  text-decoration: underline; background: none; border: none;
+  padding: 0;
+}
+#jarvas-tab-clear:hover { opacity: 0.7; }
 </style>
 </head>
 <body>
@@ -366,6 +512,7 @@
   <button class="main-nav-item"        data-group="voorraad" onclick="showMainTab('voorraad')"><span class="mni-icon">📦</span>VOORRAAD</button>
   <button class="main-nav-item"        data-group="lineup"   onclick="showMainTab('lineup')"><span class="mni-icon">🎵</span>LINEUP</button>
   <button class="main-nav-item"        data-group="beheer"   onclick="showMainTab('beheer')"><span class="mni-icon">⚙️</span>BEHEER</button>
+  <button class="main-nav-item" data-group="jarvas" onclick="showMainTab('jarvas')" id="mnav-jarvas"><span class="main-nav-icon">🤖</span><span class="main-nav-label">JARVAS</span></button>
 </nav>
 <div class="sub-nav" id="sub-nav"></div>
 
@@ -579,6 +726,29 @@
       <button class="btn-danger" style="width:100%;padding:12px;font-size:14px;letter-spacing:2px" onclick="resetAlles()">&#128465; ALLES WISSEN</button>
     </div>
   </div>
+
+  <div class="card" id="jarvas-settings-section">
+    <div class="card-title">🤖 JARVAS INSTELLINGEN</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
+      <div>
+        <label style="font-size:11px;opacity:0.6;font-family:'Space Mono',monospace;display:block;margin-bottom:4px;">ANTHROPIC API KEY</label>
+        <input type="password" id="jarvas-anthropic-key" class="form-input" placeholder="sk-ant-api03-..." style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:11px;opacity:0.6;font-family:'Space Mono',monospace;display:block;margin-bottom:4px;">ELEVENLABS API KEY (optioneel)</label>
+        <input type="password" id="jarvas-elevenlabs-key" class="form-input" placeholder="el_..." style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:11px;opacity:0.6;font-family:'Space Mono',monospace;display:block;margin-bottom:4px;">ELEVENLABS VOICE ID (optioneel)</label>
+        <input type="text" id="jarvas-voice-id" class="form-input" placeholder="voice id van ElevenLabs" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:11px;opacity:0.6;font-family:'Space Mono',monospace;display:block;margin-bottom:4px;">FALLBACK STEM (browser)</label>
+        <select id="jarvas-fallback-voice" class="form-input" style="width:100%"><option value="">— Geen stem —</option></select>
+      </div>
+      <button class="btn" onclick="saveJarvasSettings()" style="margin-top:4px;">OPSLAAN</button>
+    </div>
+  </div>
 </div>
 
 <!-- TICKETS -->
@@ -669,6 +839,24 @@
 </div>
 
 <!-- MODAL: INKOOP -->
+<!-- JARVAS TAB -->
+<div class="content" id="tab-jarvas">
+  <div id="jarvas-tab-header">
+    <h2>🤖 JARVAS — KSV ASSISTENT</h2>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="jarvas-tab-statusdot"></span>
+      <span id="jarvas-tab-statuslabel">GEREED</span>
+    </div>
+  </div>
+  <div id="jarvas-tab-chat"></div>
+  <div id="jarvas-tab-inputbar">
+    <button class="jarvas-tab-mic" id="jarvas-tab-mic-btn" onclick="jarvasToggleMic('tab')" title="Spreek je vraag in">🎤</button>
+    <input type="text" id="jarvas-tab-text" placeholder="Stel Jarvas een vraag over KSV..." onkeydown="if(event.key==='Enter')jarvasSendFromTab()">
+    <button class="jarvas-tab-send" onclick="jarvasSendFromTab()" title="Versturen">➤</button>
+    <button id="jarvas-tab-clear" onclick="jarvasClearHistory()">wissen</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal-inkoop">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('modal-inkoop')">✕</button>
@@ -1454,7 +1642,8 @@ var TAB_GROUPS={
   orders:  {tabs:['verkoop','inkoop','tickets','overzicht','afgerond'], icon:'🛒'},
   voorraad:{tabs:['voorraad'],                                     icon:'📦'},
   lineup:  {tabs:['lineup'],                                       icon:'🎵'},
-  beheer:  {tabs:['financieel','producten'],                       icon:'⚙️'}
+  beheer:  {tabs:['financieel','producten'],                       icon:'⚙️'},
+  jarvas:  {tabs:['jarvas'],                                       icon:'🤖'}
 };
 var SUB_LABELS={
   dashboard:'HOME', verkoop:'VERKOOP', inkoop:'INKOOP',
@@ -1498,7 +1687,7 @@ function showTab(name){
   var renders={dashboard:renderDashboard,voorraad:renderVoorraad,verkoop:renderVerkoop,
     inkoop:renderInkoop,afgerond:renderAfgerond,financieel:renderFinancieel,
     tickets:renderTickets,overzicht:renderOverzicht,producten:renderProducten,
-    lineup:renderLineup};
+    lineup:renderLineup,jarvas:renderJarvasTab};
   if(renders[name])renders[name]();
   updateNav(name);
 }
@@ -2479,6 +2668,7 @@ renderConsumablesOverzicht();
   sf('set-org-email',ss.orgEmail);sf('set-org-adres',ss.orgAdres);sf('set-org-iban',ss.orgIban);
   sf('set-org-contact',ss.orgContact);sf('set-org-telefoon',ss.orgTelefoon);
   sf('set-fest-naam',ss.festNaam);sf('set-fest-datum',ss.festDatum);sf('set-fest-locatie',ss.festLocatie);
+  renderJarvasSettingsSection();
 }
 function saveSettings(){
   var gv=function(id){var e=document.getElementById(id);return e?e.value.trim():'';};
@@ -4018,6 +4208,7 @@ function startApp(){
   startPolling();
   document.getElementById('lp-cta-btn').addEventListener('click',function(){hideLanding('dashboard');});
   document.getElementById('home-btn').addEventListener('click',showLanding);
+  document.getElementById('jarvas-float-btn').style.display = 'flex';
 }
 
 if(sessionStorage.getItem('ksv_auth')==='1'){
@@ -4032,6 +4223,376 @@ if(sessionStorage.getItem('ksv_auth')==='1'){
   },100);
 }
 
+// ========================================
+// JARVAS AI ASSISTENT
+// ========================================
+var JARVAS = {
+  history: [],
+  status: 'idle',
+  floatOpen: false,
+  recognition: null,
+  micTarget: null,
+  speaking: false
+};
+
+function jarvasBuildContext() {
+  try {
+    var lines = [];
+    // Producten en voorraad
+    if (S.producten && S.producten.length) {
+      lines.push('=== PRODUCTEN & VOORRAAD ===');
+      S.producten.forEach(function(p) {
+        if (p.varianten && p.varianten.length) {
+          p.varianten.forEach(function(v) {
+            var key = p.id + '__' + v.id;
+            var qty = (S.voorraad && S.voorraad[key] != null) ? S.voorraad[key] : '?';
+            lines.push(p.naam + ' \u2013 ' + v.naam + ': ' + qty + ' stuks (vk \u20ac' + (p.verkoop||0) + ', ink \u20ac' + (p.inkoop||0) + ')');
+          });
+        } else {
+          var qty2 = (S.voorraad && S.voorraad[p.id] != null) ? S.voorraad[p.id] : '?';
+          lines.push(p.naam + ': ' + qty2 + ' stuks (vk \u20ac' + (p.verkoop||0) + ', ink \u20ac' + (p.inkoop||0) + ')');
+        }
+      });
+    }
+    // Verkoop orders
+    if (S.verkoopOrders && S.verkoopOrders.length) {
+      lines.push('=== VERKOOPORDERS (' + S.verkoopOrders.length + ' totaal) ===');
+      var openVk = S.verkoopOrders.filter(function(o){ return o.betaling !== 'betaald'; });
+      if (openVk.length) lines.push('Open betalingen: ' + openVk.length + ' orders');
+      var vkOmzet = 0;
+      S.verkoopOrders.forEach(function(o){
+        if (o.items) o.items.forEach(function(i){ vkOmzet += (i.prijs||0) * (i.aantal||0); });
+      });
+      lines.push('Totale verkoopomzet: \u20ac' + vkOmzet.toFixed(2));
+    }
+    // Inkoop orders
+    if (S.inkoopOrders && S.inkoopOrders.length) {
+      var inkKosten = 0;
+      S.inkoopOrders.forEach(function(o){
+        if (o.items) o.items.forEach(function(i){ inkKosten += (i.inkoop||0) * (i.aantal||0); });
+      });
+      lines.push('=== INKOOPKOSTEN ===');
+      lines.push('Totale inkoopkosten: \u20ac' + inkKosten.toFixed(2));
+    }
+    // Ticket verkopen
+    if (S.ticketVerkopen && S.ticketVerkopen.length) {
+      var tickOmzet = 0, tickAantal = 0;
+      S.ticketVerkopen.forEach(function(t){ tickOmzet += (t.prijs||0)*(t.aantal||0); tickAantal += (t.aantal||0); });
+      lines.push('=== TICKETS ===');
+      lines.push('Tickets verkocht: ' + tickAantal + ' (omzet \u20ac' + tickOmzet.toFixed(2) + ')');
+    }
+    // Lineup
+    if (S.lineup && S.lineup.artiesten && S.lineup.artiesten.length) {
+      lines.push('=== LINEUP ===');
+      S.lineup.artiesten.forEach(function(a){
+        lines.push(a.naam + ' \u2013 status: ' + (a.status||'?') + ', gage gevraagd: \u20ac' + (a.gageGevraagd||0) + ', onderhandeld: \u20ac' + (a.gageOnderhandeld||0));
+      });
+    }
+    return lines.join('\n');
+  } catch(e) { return 'Kon KSV-data niet ophalen.'; }
+}
+
+function jarvasSetStatus(s) {
+  JARVAS.status = s;
+  var labels = { idle:'GEREED', thinking:'ANALYSEERT...', listening:'LUISTERT...', speaking:'SPREEKT...', error:'FOUT' };
+  var colors = { idle:'var(--green)', thinking:'var(--accent)', listening:'var(--red)', speaking:'var(--blue)', error:'var(--red)' };
+  var label = labels[s] || s.toUpperCase();
+  var color = colors[s] || 'var(--green)';
+  var dot = document.getElementById('jarvas-tab-statusdot');
+  var lbl = document.getElementById('jarvas-tab-statuslabel');
+  var fst = document.getElementById('jarvas-float-status');
+  if (dot) { dot.style.background = color; dot.style.boxShadow = '0 0 6px ' + color; }
+  if (lbl) lbl.textContent = label;
+  if (fst) fst.textContent = label;
+}
+
+function jarvasAppendMsg(role, text, panelId) {
+  var panel = document.getElementById(panelId);
+  if (!panel) return;
+  var div = document.createElement('div');
+  div.className = 'jarvas-msg ' + (role === 'user' ? 'jarvas-msg-user' : role === 'thinking' ? 'jarvas-msg-thinking' : 'jarvas-msg-bot');
+  // Simpele formatting
+  var formatted = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--accent)">$1</strong>')
+    .replace(/\u20ac([\d.,]+)/g, '<span style="color:var(--accent)">\u20ac$1</span>')
+    .replace(/\n/g, '<br>');
+  div.innerHTML = formatted;
+  panel.appendChild(div);
+  panel.scrollTop = panel.scrollHeight;
+  return div;
+}
+
+function jarvasShowWelcome(panelId) {
+  var panel = document.getElementById(panelId);
+  if (!panel || panel.children.length > 0) return;
+  var welcome = document.createElement('div');
+  welcome.className = 'jarvas-msg jarvas-msg-bot';
+  welcome.innerHTML = 'Goedendag. Ik ben <strong style="color:var(--accent)">Jarvas</strong>, uw digitale assistent voor Kerkwerve Summervibe.<br><br>Ik heb toegang tot alle KSV-data. Wat kan ik voor u doen?';
+  panel.appendChild(welcome);
+
+  if (panelId === 'jarvas-tab-chat') {
+    var suggestions = document.createElement('div');
+    suggestions.className = 'jarvas-suggestions';
+    ['Wat is de huidige winst?', 'Welke producten hebben lage voorraad?', 'Wat zijn de openstaande betalingen?', 'Geef een overzicht van de lineup'].forEach(function(q) {
+      var btn = document.createElement('button');
+      btn.className = 'jarvas-suggestion-btn';
+      btn.textContent = q;
+      btn.onclick = function() { document.getElementById('jarvas-tab-text').value = q; jarvasSendFromTab(); };
+      suggestions.appendChild(btn);
+    });
+    panel.appendChild(suggestions);
+  }
+}
+
+function jarvasSend(text, chatPanelId) {
+  if (!text || !text.trim()) return;
+  text = text.trim();
+  var apiKey = (S.settings && S.settings.jarvasAnthropicKey) || '';
+  if (!apiKey) {
+    jarvasAppendMsg('bot', 'Voeg eerst een Anthropic API-sleutel in via de Beheer-tab \u2192 Jarvas Instellingen.', chatPanelId);
+    return;
+  }
+  jarvasAppendMsg('user', text, chatPanelId);
+  JARVAS.history.push({ role: 'user', content: text });
+  if (JARVAS.history.length > 20) JARVAS.history = JARVAS.history.slice(-20);
+
+  jarvasSetStatus('thinking');
+  var thinkEl = jarvasAppendMsg('thinking', '\u25cf \u25cf \u25cf', chatPanelId);
+
+  var context = jarvasBuildContext();
+  var sysPrompt = 'Je bent Jarvas, een Britse butler-stijl AI-assistent voor het festival Kerkwerve Summervibe. ' +
+    'Je spreekt beknopt, droog en precies. Je gebruikt economische taal. Je hebt toegang tot de actuele KSV-data.\n\n' +
+    'ACTUELE KSV DATA:\n' + context + '\n\n' +
+    'Antwoord altijd in het Nederlands, beknopt en to-the-point. Gebruik \u20ac-bedragen. Max 200 woorden.';
+
+  var messages = JARVAS.history.slice();
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 400,
+      system: sysPrompt,
+      messages: messages
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (thinkEl && thinkEl.parentNode) thinkEl.parentNode.removeChild(thinkEl);
+    var reply = (data.content && data.content[0] && data.content[0].text) || 'Geen antwoord ontvangen.';
+    if (data.error) reply = 'Fout: ' + (data.error.message || JSON.stringify(data.error));
+    JARVAS.history.push({ role: 'assistant', content: reply });
+    jarvasAppendMsg('bot', reply, chatPanelId);
+    jarvasSetStatus('idle');
+    jarvasSpeak(reply);
+  })
+  .catch(function(e) {
+    if (thinkEl && thinkEl.parentNode) thinkEl.parentNode.removeChild(thinkEl);
+    jarvasAppendMsg('bot', 'Verbindingsfout: ' + e.message, chatPanelId);
+    jarvasSetStatus('error');
+    setTimeout(function(){ jarvasSetStatus('idle'); }, 3000);
+  });
+}
+
+function jarvasSendFromTab() {
+  var inp = document.getElementById('jarvas-tab-text');
+  if (!inp) return;
+  var v = inp.value; inp.value = '';
+  jarvasSend(v, 'jarvas-tab-chat');
+}
+
+function jarvasSendFromFloat() {
+  var inp = document.getElementById('jarvas-float-text');
+  if (!inp) return;
+  var v = inp.value; inp.value = '';
+  jarvasSend(v, 'jarvas-float-chat');
+}
+
+function jarvasToggleFloat() {
+  var panel = document.getElementById('jarvas-float-panel');
+  if (!panel) return;
+  JARVAS.floatOpen = !JARVAS.floatOpen;
+  panel.style.display = JARVAS.floatOpen ? 'flex' : 'none';
+  if (JARVAS.floatOpen) {
+    jarvasShowWelcome('jarvas-float-chat');
+    setTimeout(function(){ var i = document.getElementById('jarvas-float-text'); if(i) i.focus(); }, 100);
+  }
+}
+
+function jarvasToggleMic(target) {
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('Spraakherkenning niet ondersteund in deze browser.');
+    return;
+  }
+  var micBtnId = target === 'tab' ? 'jarvas-tab-mic-btn' : 'jarvas-float-mic-btn';
+  var micBtn = document.getElementById(micBtnId);
+
+  if (JARVAS.recognition && JARVAS.micTarget === target) {
+    JARVAS.recognition.stop();
+    JARVAS.recognition = null;
+    JARVAS.micTarget = null;
+    if (micBtn) micBtn.classList.remove('jarvas-mic-active');
+    jarvasSetStatus('idle');
+    return;
+  }
+
+  if (JARVAS.recognition) { JARVAS.recognition.stop(); JARVAS.recognition = null; }
+
+  var recog = new SpeechRecognition();
+  recog.lang = 'nl-NL';
+  recog.interimResults = false;
+  recog.maxAlternatives = 1;
+  JARVAS.recognition = recog;
+  JARVAS.micTarget = target;
+
+  if (micBtn) micBtn.classList.add('jarvas-mic-active');
+  jarvasSetStatus('listening');
+
+  recog.onresult = function(e) {
+    var transcript = e.results[0][0].transcript;
+    if (micBtn) micBtn.classList.remove('jarvas-mic-active');
+    JARVAS.recognition = null; JARVAS.micTarget = null;
+    var panelId = target === 'tab' ? 'jarvas-tab-chat' : 'jarvas-float-chat';
+    var inputId = target === 'tab' ? 'jarvas-tab-text' : 'jarvas-float-text';
+    var inp = document.getElementById(inputId);
+    if (inp) inp.value = transcript;
+    jarvasSend(transcript, panelId);
+  };
+  recog.onerror = function() {
+    if (micBtn) micBtn.classList.remove('jarvas-mic-active');
+    JARVAS.recognition = null; JARVAS.micTarget = null;
+    jarvasSetStatus('error');
+    setTimeout(function(){ jarvasSetStatus('idle'); }, 2000);
+  };
+  recog.onend = function() {
+    if (micBtn) micBtn.classList.remove('jarvas-mic-active');
+    if (JARVAS.micTarget === target) { JARVAS.recognition = null; JARVAS.micTarget = null; }
+    if (JARVAS.status === 'listening') jarvasSetStatus('idle');
+  };
+  recog.start();
+}
+
+function jarvasSpeak(text) {
+  var elKey = (S.settings && S.settings.jarvasElevenLabsKey) || '';
+  var voiceId = (S.settings && S.settings.jarvasVoiceId) || '';
+
+  if (elKey && voiceId) {
+    jarvasSetStatus('speaking');
+    fetch('https://api.elevenlabs.io/v1/text-to-speech/' + voiceId, {
+      method: 'POST',
+      headers: { 'xi-api-key': elKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } })
+    })
+    .then(function(r){ return r.arrayBuffer(); })
+    .then(function(buf) {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctx.decodeAudioData(buf, function(decoded) {
+        var src = ctx.createBufferSource();
+        src.buffer = decoded;
+        src.connect(ctx.destination);
+        src.onended = function(){ jarvasSetStatus('idle'); };
+        src.start(0);
+      });
+    })
+    .catch(function(){ jarvasSpeakFallback(text); });
+    return;
+  }
+  jarvasSpeakFallback(text);
+}
+
+function jarvasSpeakFallback(text) {
+  if (!window.speechSynthesis) { jarvasSetStatus('idle'); return; }
+  window.speechSynthesis.cancel();
+  var utt = new SpeechSynthesisUtterance(text);
+  var fallbackVoice = (S.settings && S.settings.jarvasFallbackVoice) || '';
+  if (fallbackVoice) {
+    var voices = window.speechSynthesis.getVoices();
+    var v = voices.find(function(x){ return x.name === fallbackVoice; });
+    if (v) utt.voice = v;
+  }
+  utt.lang = 'nl-NL';
+  jarvasSetStatus('speaking');
+  utt.onend = function(){ jarvasSetStatus('idle'); };
+  window.speechSynthesis.speak(utt);
+}
+
+function jarvasClearHistory() {
+  JARVAS.history = [];
+  var tc = document.getElementById('jarvas-tab-chat');
+  var fc = document.getElementById('jarvas-float-chat');
+  if (tc) tc.innerHTML = '';
+  if (fc) fc.innerHTML = '';
+  jarvasShowWelcome('jarvas-tab-chat');
+  jarvasSetStatus('idle');
+}
+
+function renderJarvasTab() {
+  jarvasShowWelcome('jarvas-tab-chat');
+  jarvasSetStatus(JARVAS.status === 'idle' ? 'idle' : JARVAS.status);
+}
+
+function saveJarvasSettings() {
+  if (!S.settings) S.settings = {};
+  S.settings.jarvasAnthropicKey = (document.getElementById('jarvas-anthropic-key') || {}).value || S.settings.jarvasAnthropicKey || '';
+  S.settings.jarvasElevenLabsKey = (document.getElementById('jarvas-elevenlabs-key') || {}).value || S.settings.jarvasElevenLabsKey || '';
+  S.settings.jarvasVoiceId = (document.getElementById('jarvas-voice-id') || {}).value || S.settings.jarvasVoiceId || '';
+  var selEl = document.getElementById('jarvas-fallback-voice');
+  if (selEl) S.settings.jarvasFallbackVoice = selEl.value;
+  save();
+  showToast('Jarvas instellingen opgeslagen');
+}
+
+function renderJarvasSettingsSection() {
+  var el = document.getElementById('jarvas-settings-section');
+  if (!el) return;
+  // Vul browser TTS stemmen in
+  var sel = document.getElementById('jarvas-fallback-voice');
+  if (sel && window.speechSynthesis) {
+    var voices = window.speechSynthesis.getVoices();
+    if (!voices.length) {
+      window.speechSynthesis.onvoiceschanged = function() {
+        var v2 = window.speechSynthesis.getVoices();
+        sel.innerHTML = '<option value="">\u2014 Geen stem \u2014</option>' + v2.map(function(v){ return '<option value="' + v.name + '" ' + ((S.settings && S.settings.jarvasFallbackVoice === v.name) ? 'selected' : '') + '>' + v.name + '</option>'; }).join('');
+      };
+    } else {
+      sel.innerHTML = '<option value="">\u2014 Geen stem \u2014</option>' + voices.map(function(v){ return '<option value="' + v.name + '" ' + ((S.settings && S.settings.jarvasFallbackVoice === v.name) ? 'selected' : '') + '>' + v.name + '</option>'; }).join('');
+    }
+  }
+  // Vul opgeslagen keys in
+  var ak = document.getElementById('jarvas-anthropic-key');
+  var ek = document.getElementById('jarvas-elevenlabs-key');
+  var vi = document.getElementById('jarvas-voice-id');
+  if (ak && S.settings) ak.value = S.settings.jarvasAnthropicKey || '';
+  if (ek && S.settings) ek.value = S.settings.jarvasElevenLabsKey || '';
+  if (vi && S.settings) vi.value = S.settings.jarvasVoiceId || '';
+}
+// ========================================
+// EINDE JARVAS
+// ========================================
+
 </script>
+<!-- JARVAS FLOATING WIDGET -->
+<button id="jarvas-float-btn" onclick="jarvasToggleFloat()" title="Jarvas AI Assistent" aria-label="Jarvas openen">🤖</button>
+<div id="jarvas-float-panel">
+  <div id="jarvas-float-header">
+    <span>🤖 JARVAS</span>
+    <button onclick="jarvasToggleFloat()">✕</button>
+  </div>
+  <div id="jarvas-float-status">GEREED</div>
+  <div id="jarvas-float-chat"></div>
+  <div id="jarvas-float-input">
+    <button class="jarvas-float-mic-btn" id="jarvas-float-mic-btn" onclick="jarvasToggleMic('float')" title="Spraak">🎤</button>
+    <input type="text" id="jarvas-float-text" placeholder="Vraag iets..." onkeydown="if(event.key==='Enter')jarvasSendFromFloat()">
+    <button class="jarvas-float-send" onclick="jarvasSendFromFloat()">➤</button>
+  </div>
+</div>
+
 </body>
 </html>
