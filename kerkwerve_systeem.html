@@ -459,6 +459,7 @@ function load(){try{const r=localStorage.getItem('ksv3');if(r)S=JSON.parse(r);}c
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
 function fmt(n){return '€'+parseFloat(n||0).toFixed(2).replace('.',',');}
 function today(){return new Date().toLocaleDateString('nl-NL',{day:'2-digit',month:'2-digit',year:'2-digit'});}
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function sk(pId,vId){return pId+'__'+(vId||'_');}
 function getStock(pId,vId){return S.voorraad[sk(pId,vId)]||0;}
 function setStock(pId,vId,n){S.voorraad[sk(pId,vId)]=Math.max(0,n);}
@@ -548,8 +549,8 @@ function renderDashboard(){
   let al='';
   S.producten.forEach(p=>(p.varianten||[]).forEach(v=>{
     const st=getStock(p.id,v.id);
-    if(st===0)al+=`<div class="alert-box"><div class="al">⚠️ ${p.naam} ${v.naam} — UITVERKOCHT</div><div class="as">Bestel bij voor meer voorraad</div></div>`;
-    else if(st<=2)al+=`<div class="alert-box alert-orange"><div class="al">⚡ ${p.naam} ${v.naam} — NOG ${st} STUKS</div><div class="as">Bijna op!</div></div>`;
+    if(st===0)al+=`<div class="alert-box"><div class="al">⚠️ ${escHtml(p.naam)} ${escHtml(v.naam)} — UITVERKOCHT</div><div class="as">Bestel bij voor meer voorraad</div></div>`;
+    else if(st<=2)al+=`<div class="alert-box alert-orange"><div class="al">⚡ ${escHtml(p.naam)} ${escHtml(v.naam)} — NOG ${st} STUKS</div><div class="as">Bijna op!</div></div>`;
   }));
   const onbetInk=S.inkoopOrders.filter(o=>o.betaling!=='betaald');
   if(onbetInk.length)al+=`<div class="alert-box alert-orange"><div class="al">💸 ${onbetInk.length} inkooporder(s) onbetaald</div><div class="as">Ga naar Inkoop tab</div></div>`;
@@ -567,8 +568,8 @@ function renderDashboard(){
     const col=st===0?'var(--red)':st<=2?'var(--orange)':'var(--green)';
     vr.innerHTML+=`<div class="stat-row">
       <span class="stat-label" style="display:flex;align-items:center;gap:6px">
-        <span style="width:10px;height:10px;border-radius:50%;background:${v.kleur||'#555'};flex-shrink:0"></span>
-        ${p.naam} · ${v.naam}
+        <span style="width:10px;height:10px;border-radius:50%;background:${escHtml(v.kleur||'#555')};flex-shrink:0"></span>
+        ${escHtml(p.naam)} · ${escHtml(v.naam)}
       </span>
       <span style="font-family:var(--fd);font-size:20px;color:${col}">${st}</span>
     </div>`;
@@ -582,10 +583,10 @@ function renderDashboard(){
     const prod=getProd(o.prodId);const v=getVar(prod,o.variantId);
     return `<div class="stat-row">
       <div>
-        <div style="font-family:var(--fd);font-size:15px">${o.naam}</div>
-        <div style="font-size:10px;color:var(--muted)">${prod?.naam||''} ${v?'· '+v.naam:''} · ${o.datum}</div>
+        <div style="font-family:var(--fd);font-size:15px">${escHtml(o.naam)}</div>
+        <div style="font-size:10px;color:var(--muted)">${escHtml(prod?.naam||'')} ${v?'· '+escHtml(v.naam):''} · ${escHtml(o.datum)}</div>
       </div>
-      <span class="tag ${STATUS_TAG[o.status]||''}">${STATUS_LBL[o.status]||o.status}</span>
+      <span class="tag ${STATUS_TAG[o.status]||''}">${STATUS_LBL[o.status]||escHtml(o.status)}</span>
     </div>`;
   }).join('');}
 
@@ -683,8 +684,8 @@ function renderVoorraad(){
       grid.innerHTML+=`
         <div class="kleur-card">
           ${rv>0?`<div class="res-badge">${rv} RES</div>`:''}
-          <div class="kleur-dot" style="background:${v.kleur||'#555'}"></div>
-          <div class="kleur-name">${v.naam}</div>
+          <div class="kleur-dot" style="background:${escHtml(v.kleur||'#555')}"></div>
+          <div class="kleur-name">${escHtml(v.naam)}</div>
           <div class="stock-num ${nc}">${st}</div>
           <div class="stock-meta">${av} vrij · ${rv} res</div>
         </div>`;
@@ -723,17 +724,17 @@ function orderCard(o,closed){
 
   return `<div class="order-card s-${closed?'gesloten':o.status}">
     <div class="order-head">
-      <div class="order-name">${o.naam}</div>
-      <div class="order-date">${o.datum}</div>
+      <div class="order-name">${escHtml(o.naam)}</div>
+      <div class="order-date">${escHtml(o.datum)}</div>
     </div>
     <div class="order-tags">
-      ${v?`<span class="tag" style="border-left:3px solid ${v.kleur||'#555'}">${prod?.naam||''} · ${v.naam}</span>`:`<span class="tag">${prod?.naam||o.prodId}</span>`}
+      ${v?`<span class="tag" style="border-left:3px solid ${escHtml(v.kleur||'#555')}">${escHtml(prod?.naam||'')} · ${escHtml(v.naam)}</span>`:`<span class="tag">${escHtml(prod?.naam||o.prodId)}</span>`}
       ${antal>1?`<span class="tag">${antal}x</span>`:''}
-      <span class="tag ${STATUS_TAG[o.status]||''}">${STATUS_LBL[o.status]||o.status}</span>
+      <span class="tag ${STATUS_TAG[o.status]||''}">${STATUS_LBL[o.status]||escHtml(o.status)}</span>
       <span class="tag ${o.betaling==='betaald'?'tag-green':'tag-orange'}">${o.betaling==='betaald'?'✅ BETAALD':'⏳ BETALING OPEN'}</span>
       ${heeftVerzend?`<span class="tag tag-blue">📦 +€${(vrzd).toFixed(2)} verzend (klant betaalt)</span>`:''}
     </div>
-    ${o.notitie?`<div style="font-size:10px;color:var(--muted);margin-bottom:6px">${o.notitie}</div>`:''}
+    ${o.notitie?`<div style="font-size:10px;color:var(--muted);margin-bottom:6px">${escHtml(o.notitie)}</div>`:''}
     <div class="order-fin">
       <div><div style="font-size:9px;color:var(--muted)">WINST</div>
         <div class="order-winst ${winst<0?'neg':''}">${fmt(winst)}</div></div>
@@ -808,20 +809,20 @@ function inkoopCard(o){
   const totaal=(o.items||[]).reduce((s,i)=>s+i.aantal*(i.inkoop||10.20),0);
   const items=(o.items||[]).map(i=>{
     const p=getProd(i.prodId);const v=getVar(p,i.variantId);
-    return `${i.aantal}× ${p?.naam||i.prodId}${v?' '+v.naam:''}`;
+    return `${i.aantal}× ${escHtml(p?.naam||i.prodId)}${v?' '+escHtml(v.naam):''}`;
   }).join(', ');
   return `<div class="inkoop-card ${o.ontvangen?'ontvangen':''}">
     <div class="order-head">
-      <div class="order-name">${o.leverancier||'Inkoop'}</div>
-      <div class="order-date">${o.datum}</div>
+      <div class="order-name">${escHtml(o.leverancier||'Inkoop')}</div>
+      <div class="order-date">${escHtml(o.datum)}</div>
     </div>
     <div class="order-tags">
       <span class="tag">${items}</span>
       <span class="tag ${o.betaling==='betaald'?'tag-green':'tag-orange'}">${o.betaling==='betaald'?'✅ BETAALD':'⏳ ONBETAALD'}</span>
-      ${o.ontvangen?`<span class="tag tag-green">📦 ONTVANGEN ${o.ontvangstDatum||''}</span>`:'<span class="tag tag-orange">⏳ ONDERWEG</span>'}
-      ${o.leverdatum?`<span class="tag tag-blue">📅 ${o.leverdatum}</span>`:''}
+      ${o.ontvangen?`<span class="tag tag-green">📦 ONTVANGEN ${escHtml(o.ontvangstDatum||'')}</span>`:'<span class="tag tag-orange">⏳ ONDERWEG</span>'}
+      ${o.leverdatum?`<span class="tag tag-blue">📅 ${escHtml(o.leverdatum)}</span>`:''}
     </div>
-    ${o.notitie?`<div style="font-size:10px;color:var(--muted);margin-bottom:6px">${o.notitie}</div>`:''}
+    ${o.notitie?`<div style="font-size:10px;color:var(--muted);margin-bottom:6px">${escHtml(o.notitie)}</div>`:''}
     <div class="order-fin">
       <div><div style="font-size:9px;color:var(--muted)">TOTAAL KOSTEN</div>
         <div style="font-family:var(--fd);font-size:17px;color:var(--red)">${fmt(totaal)}</div></div>
@@ -902,7 +903,7 @@ function renderFinancieel(){
       return s+((o.aantal||1)*(o.prijs||prod.verkoop))-((o.aantal||1)*prod.inkoop);
     },0);
     return `<div class="stat-row">
-      <span class="stat-label">${prod.icon||'📦'} ${prod.naam}</span>
+      <span class="stat-label">${escHtml(prod.icon||'📦')} ${escHtml(prod.naam)}</span>
       <span style="font-size:10px;color:var(--muted);text-align:right">
         ${totN} verkocht &nbsp;
         <span style="font-family:var(--fd);font-size:17px;color:${totW>=0?'var(--green)':'var(--red)'}">${fmt(totW)}</span>
@@ -924,11 +925,11 @@ function saveSettings(){
 function renderProducten(){
   document.getElementById('product-list').innerHTML=S.producten.map(p=>`
     <div class="product-card">
-      <div class="product-icon">${p.icon||'📦'}</div>
+      <div class="product-icon">${escHtml(p.icon||'📦')}</div>
       <div class="product-info">
-        <div class="product-name">${p.naam}</div>
+        <div class="product-name">${escHtml(p.naam)}</div>
         <div class="product-sub">Inkoop: ${fmt(p.inkoop)} · Verkoop: ${fmt(p.verkoop)}</div>
-        <div class="product-sub" style="margin-top:2px">${(p.varianten||[]).map(v=>`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${v.kleur||'#555'};margin-right:3px;vertical-align:middle"></span>${v.naam}`).join(' · ')}</div>
+        <div class="product-sub" style="margin-top:2px">${(p.varianten||[]).map(v=>`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${escHtml(v.kleur||'#555')};margin-right:3px;vertical-align:middle"></span>${escHtml(v.naam)}`).join(' · ')}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <button class="btn-sec" style="font-size:11px;padding:6px 10px" onclick="editProduct('${p.id}')">EDIT</button>
@@ -962,7 +963,7 @@ function addInkoopItem(){
       <button class="btn-danger" style="padding:2px 8px;font-size:12px" onclick="document.getElementById('irow-${idx}').remove()">✕</button>
     </div>
     <select class="form-select" id="iprod-${idx}" onchange="updateInkVar(${idx})" style="margin-bottom:6px">
-      ${S.producten.map(p=>`<option value="${p.id}">${p.icon||''} ${p.naam}</option>`).join('')}
+      ${S.producten.map(p=>`<option value="${escHtml(p.id)}">${escHtml(p.icon||'')} ${escHtml(p.naam)}</option>`).join('')}
     </select>
     <div id="ivar-${idx}"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
@@ -982,7 +983,7 @@ function updateInkVar(idx){
   if(prod?.varianten?.length){
     varWrap.innerHTML=`<label class="form-label">Variant</label>
       <select class="form-select" id="ivar-sel-${idx}">
-        ${prod.varianten.map(v=>`<option value="${v.id}">${v.naam}</option>`).join('')}
+        ${prod.varianten.map(v=>`<option value="${escHtml(v.id)}">${escHtml(v.naam)}</option>`).join('')}
       </select>`;
   } else {
     varWrap.innerHTML='';
@@ -1037,7 +1038,7 @@ function prepVerkoop(){
   document.querySelectorAll('#modal-verkoop .sel-btn').forEach(b=>b.classList.remove('selected'));
   document.getElementById('vk-vrzd-info').style.display='none';
   const sel2=document.getElementById('vk-product');
-  sel2.innerHTML=S.producten.map(p=>`<option value="${p.id}">${p.icon||''} ${p.naam}</option>`).join('');
+  sel2.innerHTML=S.producten.map(p=>`<option value="${escHtml(p.id)}">${escHtml(p.icon||'')} ${escHtml(p.naam)}</option>`).join('');
   renderVkVariants();
 }
 
@@ -1052,9 +1053,9 @@ function renderVkVariants(){
     wrap.style.display='block';
     grid.innerHTML=prod.varianten.map(v=>{
       const st=getStock(prodId,v.id);const rv=getReserved(prodId,v.id);const av=Math.max(0,st-rv);
-      return `<button class="sel-btn" onclick="selVkVar(this,'${v.id}')">
-        <span class="cdot" style="background:${v.kleur||'#555'}"></span>
-        ${v.naam} <span style="font-size:10px;color:var(--muted)">(${av})</span>
+      return `<button class="sel-btn" onclick="selVkVar(this,'${escHtml(v.id)}')">
+        <span class="cdot" style="background:${escHtml(v.kleur||'#555')}"></span>
+        ${escHtml(v.naam)} <span style="font-size:10px;color:var(--muted)">(${av})</span>
       </button>`;
     }).join('');
   } else {
@@ -1124,9 +1125,9 @@ function addVariant(){_variants.push({id:uid().slice(0,6),naam:'',kleur:'#888888
 function renderVarRows(){
   document.getElementById('prod-variants-wrap').innerHTML=_variants.map((v,i)=>`
     <div style="display:grid;grid-template-columns:1fr 80px 50px 28px;gap:6px;margin-bottom:6px;align-items:center">
-      <input class="form-input" placeholder="Naam" value="${v.naam}" oninput="_variants[${i}].naam=this.value" style="padding:8px">
-      <input type="color" value="${v.kleur||'#888888'}" oninput="_variants[${i}].kleur=this.value" style="width:100%;height:38px;border:1px solid var(--border);border-radius:2px;background:none;cursor:pointer">
-      <input class="form-input" placeholder="ID" value="${v.id}" oninput="_variants[${i}].id=this.value" style="padding:6px;font-size:10px">
+      <input class="form-input" placeholder="Naam" value="${escHtml(v.naam)}" oninput="_variants[${i}].naam=this.value" style="padding:8px">
+      <input type="color" value="${escHtml(v.kleur||'#888888')}" oninput="_variants[${i}].kleur=this.value" style="width:100%;height:38px;border:1px solid var(--border);border-radius:2px;background:none;cursor:pointer">
+      <input class="form-input" placeholder="ID" value="${escHtml(v.id)}" oninput="_variants[${i}].id=this.value" style="padding:6px;font-size:10px">
       <button class="btn-danger" style="padding:4px" onclick="_variants.splice(${i},1);renderVarRows()">✕</button>
     </div>`).join('');
 }

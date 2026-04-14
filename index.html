@@ -1586,7 +1586,7 @@ function printPakbon(id){
     +'@media print{button{display:none}}'
     +'</style></head><body>'
     +'<div class="kop"><div><h1>KERKWERVE SUMMERVIBE</h1><h2>PAKBON / VERKOOPORDER</h2></div>'
-    +'<div style="text-align:right"><div style="font-size:11px;color:#555">Datum: '+displayDate(o.datum)+'</div>'
+    +'<div style="text-align:right"><div style="font-size:11px;color:#555">Datum: '+escHtml(displayDate(o.datum))+'</div>'
     +'<div style="font-size:11px;color:#555">Order: '+o.id+'</div></div></div>'
     +'<div style="margin-bottom:16px"><strong>Klant:</strong> '+escHtml(o.naam)+'</div>'
     +(adresBlok?'<div style="margin-bottom:16px"><strong>Verzendadres:</strong><br>'+adresBlok+'</div>':'')
