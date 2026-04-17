@@ -4426,7 +4426,6 @@ function jarvasSend(text, chatPanelId) {
     if (data.error) reply = 'Fout: ' + (data.error.message || JSON.stringify(data.error));
     JARVAS.history.push({ role: 'assistant', content: reply });
     jarvasAppendMsg('bot', reply, chatPanelId);
-    jarvasSetStatus('idle');
     jarvasSpeak(reply);
   })
   .catch(function(e) {
@@ -4527,7 +4526,10 @@ function jarvasSpeak(text) {
       headers: { 'xi-api-key': elKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text, model_id: 'eleven_multilingual_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } })
     })
-    .then(function(r){ return r.arrayBuffer(); })
+    .then(function(r) {
+      if (!r.ok) throw new Error('ElevenLabs HTTP ' + r.status);
+      return r.arrayBuffer();
+    })
     .then(function(buf) {
       var ctx = new (window.AudioContext || window.webkitAudioContext)();
       ctx.decodeAudioData(buf, function(decoded) {
@@ -4536,7 +4538,7 @@ function jarvasSpeak(text) {
         src.connect(ctx.destination);
         src.onended = function(){ jarvasSetStatus('idle'); };
         ctx.resume().then(function(){ src.start(0); });
-      });
+      }, function() { jarvasSpeakFallback(text); });
     })
     .catch(function(){ jarvasSpeakFallback(text); });
     return;
